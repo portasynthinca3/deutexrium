@@ -63,6 +63,13 @@ defmodule Markov do
     end
   end
 
+  def serialize(%Markov{}=chain) do
+    :erlang.term_to_binary(chain)
+  end
+  def deserialize(data) when is_binary(data) do
+    :erlang.binary_to_term(data)
+  end
+
   defp prettify_node(str) when is_binary(str) do str end
   defp prettify_node(atom) when is_atom(atom) do "<" <> Atom.to_string(atom) <> ">" end
 
