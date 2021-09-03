@@ -26,6 +26,8 @@ defmodule Markov do
         Map.put(acc, first, Map.put(links_from_first, second, links_from_first[second] + 1))
       end
     end
+    # forcefully break the start -> end link
+    new_links = Map.put(new_links, :start, Map.delete(new_links.start, :end))
     chain = %{chain | links: new_links}
 
     chain
@@ -49,6 +51,16 @@ defmodule Markov do
         |> List.last
         |> Enum.sum
     :rand.uniform(sum + 1) - 1 |> probabilistic_select(links, sum)
+  end
+
+  def generate_text(%Markov{}=chain, acc \\ "", state \\ :start) do
+    state = next_state(chain, state)
+    unless state == :end do
+      acc = acc <> state <> " "
+      generate_text(chain, acc, state)
+    else
+      String.trim(acc)
+    end
   end
 
   defp prettify_node(str) when is_binary(str) do str end

@@ -3,9 +3,6 @@ defmodule Deutexrium do
   alias Nostrum.Api
 
   def start_link do
-    chain = Markov.train(%Markov{}, "hello world my world")
-
-
     Consumer.start_link(__MODULE__)
   end
 
