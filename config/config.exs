@@ -12,3 +12,6 @@ config :nostrum,
 
 config :porcelain,
   goon_warn_if_missing: false
+
+config :deutexrium,
+  data_path: "/var/deutex_data"
