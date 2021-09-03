@@ -31,13 +31,28 @@ defmodule Markov do
     chain
   end
 
-  # debugging only
-  def prettify_node(str) when is_binary(str) do
-    str
+  defp probabilistic_select(number, [{name, add} | tail], sum, acc \\ 0) do
+    if (number >= acc) and (number <= acc + add) do
+      name
+    else
+      probabilistic_select(number, tail, sum, acc + add)
+    end
   end
-  def prettify_node(atom) when is_atom(atom) do
-    "<" <> Atom.to_string(atom) <> ">"
+
+  def next_state(%Markov{}=chain, current) do
+    # get links from current state
+    # (enforce constant order by converting to proplist)
+    links = chain.links[current] |> Enum.into([])
+    # do the magic
+    sum = Enum.unzip(links)
+        |> Tuple.to_list
+        |> List.last
+        |> Enum.sum
+    :rand.uniform(sum + 1) - 1 |> probabilistic_select(links, sum)
   end
+
+  defp prettify_node(str) when is_binary(str) do str end
+  defp prettify_node(atom) when is_atom(atom) do "<" <> Atom.to_string(atom) <> ">" end
 
   @spec print(%Markov{}) :: nil
   def print(%Markov{}=chain) do
