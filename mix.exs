@@ -20,7 +20,8 @@ defmodule Deutexrium.MixProject do
 
   defp deps do
     [
-      nostrum: "~> 0.4"
+      {:gun, github: "ninenines/gun", override: true}, # specific version required by nostrum
+      {:nostrum, github: "kraigie/nostrum", ref: "7f036c452f7c7c8422e8d86768217e606ef32255"}
     ]
   end
 end
