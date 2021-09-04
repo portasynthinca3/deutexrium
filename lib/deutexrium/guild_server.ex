@@ -27,6 +27,12 @@ defmodule Deutexrium.GuildServer do
   end
 
   @impl true
+  def handle_call({:reset, :settings}, _from, {id, meta, timeout}) do
+    Logger.info("guild-#{id} server: settings reset")
+    {:reply, :ok, {id, %GuildMeta{}, timeout}, timeout}
+  end
+
+  @impl true
   def handle_info(:timeout, {id, meta, _}) do
     # unload everything
     Logger.info("guild-#{id} server: unloading")
@@ -71,5 +77,9 @@ defmodule Deutexrium.GuildServer do
 
   def get_meta(id) when is_integer(id) do
     get_pid(id) |> GenServer.call(:get_meta)
+  end
+
+  def reset(id, what) when is_integer(id) and is_atom(what) do
+    get_pid(id) |> GenServer.call({:reset, what})
   end
 end

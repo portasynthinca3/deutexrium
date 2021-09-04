@@ -59,7 +59,7 @@ defmodule Deutexrium.ChannelServer do
       {reply, meta} = cond do
         # auto-generation
         meta.total_msgs >= meta.next_gen_milestone ->
-          reply = {:message, Markov.generate_text(model)}
+          reply = {:message, Markov.generate_text(model.data)}
           # set new milestone
           autorate = get_setting({id, meta}, :autogen_rate)
           {reply, %{meta | next_gen_milestone: meta.next_gen_milestone +
@@ -79,6 +79,17 @@ defmodule Deutexrium.ChannelServer do
   @impl true
   def handle_call(:generate, _from, {_, _, model, timeout}=state) do
     {:reply, Markov.generate_text(model.data), state, timeout}
+  end
+
+  @impl true
+  def handle_call({:reset, :settings}, _from, {{cid, _}=id, _, model, timeout}) do
+    Logger.info("channel-#{cid} server: settings reset")
+    {:reply, :ok, {id, %Meta{}, model, timeout}, timeout}
+  end
+  @impl true
+  def handle_call({:reset, :model}, _from, {{cid, _}=id, meta, _, timeout}) do
+    Logger.info("channel-#{cid} server: model reset")
+    {:reply, :ok, {id, meta, %Model{}, timeout}, timeout}
   end
 
   @impl true
@@ -135,5 +146,9 @@ defmodule Deutexrium.ChannelServer do
 
   def generate(id) when is_integer(id) do
     get_pid(id) |> GenServer.call(:generate)
+  end
+
+  def reset(id, what) when is_integer(id) and is_atom(what) do
+    get_pid(id) |> GenServer.call({:reset, what})
   end
 end

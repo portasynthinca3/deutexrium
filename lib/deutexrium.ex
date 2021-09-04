@@ -234,6 +234,8 @@ defmodule Deutexrium do
     {:ok, _} = Api.bulk_overwrite_guild_application_commands(765604415427575828, commands)
   end
 
+
+
   def start_link do
     GuildServer.boot()
     ChannelServer.boot()
@@ -245,16 +247,20 @@ defmodule Deutexrium do
     Logger.info("ready")
   end
 
+
+
   def handle_event({:MESSAGE_CREATE, %Struct.Message{}=msg, _}) do
     GuildServer.maybe_start(msg.guild_id)
     ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
 
     case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false) do
       :ok -> :ok
-      {:message, msg} ->
-        Api.create_message(msg.channel_id, content: msg)
+      {:message, to_send} ->
+        {:ok, _} = Api.create_message(msg.channel_id, to_send)
     end
   end
+
+
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help", options: [%{name: "setting", value: setting}]}}=inter, _}) do
     %{name: name, description: desc} =
@@ -268,6 +274,8 @@ defmodule Deutexrium do
         |> put_field(name, desc)
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
+
+
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
     GuildServer.maybe_start(inter.guild_id)
@@ -286,6 +294,8 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
+
+
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
     GuildServer.maybe_start(0)
     ChannelServer.maybe_start({0, 0})
@@ -293,6 +303,8 @@ defmodule Deutexrium do
     text = ChannelServer.generate(0)
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
+
+
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help"}}=inter, _}) do
     embed = %Struct.Embed{}
@@ -325,10 +337,23 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
 
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+    cond do
+      target == "server" and property == "settings" ->
+        :ok = GuildServer.reset(inter.guild_id, :settings)
+      target == "channel" and property == "settings" ->
+        :ok = ChannelServer.reset(inter.channel_id, :settings)
+      target == "channel" and property == "model" ->
+        :ok = ChannelServer.reset(inter.channel_id, :model)
+    end
     Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **" <> target <> " " <> property <> " reset**"}})
   end
+
+
 
   def handle_event(event) do
     Logger.warn("missed event")
