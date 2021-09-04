@@ -172,7 +172,7 @@ defmodule Deutexrium.ChannelServer do
     get_pid(id) |> GenServer.call({:reset, what})
   end
 
-  def set(id, setting, value) when is_integer(id) and is_atom(setting) and is_atom(value) do
+  def set(id, setting, value) when is_integer(id) and is_atom(setting) do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 end

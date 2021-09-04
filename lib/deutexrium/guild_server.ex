@@ -97,7 +97,7 @@ defmodule Deutexrium.GuildServer do
     get_pid(id) |> GenServer.call({:scoreboard, author})
   end
 
-  def set(id, setting, value) when is_integer(id) and is_atom(setting) and is_atom(value) do
+  def set(id, setting, value) when is_integer(id) and is_atom(setting) do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 end

@@ -25,7 +25,7 @@ defmodule Deutexrium do
 
   def non_binary_settings do
     [
-      %{value: "autorate",
+      %{value: "autogen_rate",
         name: "automatic generation rate",
         description: "automatic message generation rate (one per <value> others' messages); disabled if set to 0"}
     ]
@@ -504,6 +504,23 @@ defmodule Deutexrium do
       "channel" -> ChannelServer.set(inter.channel_id, setting, value)
     end
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{:erlang.atom_to_binary(value, :utf8)}`**", flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+
+    setting = :erlang.binary_to_existing_atom(setting, :utf8)
+    value = case setting do
+      :autogen_rate -> :erlang.binary_to_integer(value)
+    end
+    case target do
+      "server" -> GuildServer.set(inter.guild_id, setting, value)
+      "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+    end
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{value}`**", flags: 64}})
   end
 
 
