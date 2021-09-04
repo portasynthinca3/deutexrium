@@ -402,6 +402,16 @@ defmodule Deutexrium do
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}}=inter, _}) do
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium support")
+        |> put_color(0xe6f916)
+        |> put_field(":eye: Support server", "https://discord.gg/N52uWgD")
+        |> put_field(":e_mail: Email", "`portasynthinca3 (at) gmail.com`")
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
