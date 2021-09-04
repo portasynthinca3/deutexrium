@@ -250,13 +250,20 @@ defmodule Deutexrium do
 
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{}=msg, _}) do
-    GuildServer.maybe_start(msg.guild_id)
-    ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
+    unless msg.guild_id == nil or msg.channel_id == nil do
+      GuildServer.maybe_start(msg.guild_id)
+      ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
 
-    case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
-      :ok -> :ok
-      {:message, to_send} ->
-        {:ok, _} = Api.create_message(msg.channel_id, to_send)
+      # notify users about slash commands
+      if String.starts_with?(msg.content, "!!d ") do
+        {:ok, _} = Api.create_message(msg.channel_id, content: ":sparkles: **The bot is now using slash commands! Try `/help`** :sparkles:")
+      end
+
+      case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
+        :ok -> :ok
+        {:message, to_send} ->
+          {:ok, _} = Api.create_message(msg.channel_id, to_send)
+      end
     end
   end
 
@@ -272,7 +279,7 @@ defmodule Deutexrium do
         |> put_title("Deuterium setting help")
         |> put_color(0xe6f916)
         |> put_field(name, desc)
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -346,7 +353,7 @@ defmodule Deutexrium do
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}}=inter, _}) do
@@ -357,7 +364,7 @@ defmodule Deutexrium do
         |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
         |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}}=inter, _}) do
@@ -399,7 +406,7 @@ defmodule Deutexrium do
            I do not disclose collected data to anyone. Furthermore, I do not look at it myself.
            """)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}}=inter, _}) do
@@ -409,7 +416,7 @@ defmodule Deutexrium do
         |> put_field(":eye: Support server", "https://discord.gg/N52uWgD")
         |> put_field(":e_mail: Email", "`portasynthinca3 (at) gmail.com`")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -431,7 +438,7 @@ defmodule Deutexrium do
         |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
         |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -444,7 +451,7 @@ defmodule Deutexrium do
         |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
         |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -459,9 +466,7 @@ defmodule Deutexrium do
       {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
     end)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{
-      embeds: [embed]
-    }})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
