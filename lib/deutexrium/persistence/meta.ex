@@ -3,7 +3,7 @@ defmodule Deutexrium.Persistence.Meta do
     global_train: nil,
     autogen_rate: nil,
     total_msgs: 0,
-    next_generation_milestone: 20,
+    next_gen_milestone: 20,
     enable_actions: nil,
     ignore_bots: nil,
     remove_mentions: nil

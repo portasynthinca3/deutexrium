@@ -14,4 +14,6 @@ config :porcelain,
   goon_warn_if_missing: false
 
 config :deutexrium,
-  data_path: "/var/deutex_data"
+  data_path: "/var/deutex_data",
+  channel_unload_timeout: 10 * 1000, # milliseconds
+  guild_unload_timeout: 30 * 1000

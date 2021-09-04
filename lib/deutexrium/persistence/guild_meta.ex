@@ -20,7 +20,7 @@ defmodule Deutexrium.Persistence.GuildMeta do
         |> :erlang.binary_to_term
   end
 
-  def dump!(guild_id, %Deutexrium.Persistence.Meta{}=data) when is_integer(guild_id) do
+  def dump!(guild_id, %Deutexrium.Persistence.GuildMeta{}=data) when is_integer(guild_id) do
     data = data
         |> :erlang.term_to_binary
         |> :zlib.gzip

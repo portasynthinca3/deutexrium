@@ -59,7 +59,12 @@ defmodule Markov do
       acc = acc <> state <> " "
       generate_text(chain, acc, state)
     else
-      String.trim(acc)
+      str = String.trim(acc)
+      if str == "" do
+        ":x: **I haven't seen any messages yet**"
+      else
+        str
+      end
     end
   end
 

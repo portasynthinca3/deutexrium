@@ -4,6 +4,7 @@ defmodule Deutexrium do
   alias Nostrum.Api
   alias Nostrum.Struct
   import Nostrum.Struct.Embed
+  alias Deutexrium.{ChannelServer, GuildServer}
 
   def binary_settings do
     [
@@ -69,7 +70,7 @@ defmodule Deutexrium do
       ]
     } | commands]
 
-    # no-param commands
+    # zero-parameter commands
     no_param = [
       {"status", "show the current settings and stats"},
       {"stats", "show how much resources I use"},
@@ -81,10 +82,7 @@ defmodule Deutexrium do
       {"rps", "start a game of Rock-Paper-Scissors with me"}
     ]
     no_param = no_param |> Enum.map(fn {title, desc} ->
-      %{
-        name: title,
-        description: desc
-      }
+      %{name: title, description: desc}
     end)
     commands = commands ++ no_param
 
@@ -237,16 +235,25 @@ defmodule Deutexrium do
   end
 
   def start_link do
+    GuildServer.boot()
+    ChannelServer.boot()
     Consumer.start_link(__MODULE__)
   end
 
   def handle_event({:READY, _, _}) do
-    Logger.info("ready")
     add_slash_commands()
+    Logger.info("ready")
   end
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{}=msg, _}) do
-    :ok
+    GuildServer.maybe_start(msg.guild_id)
+    ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
+
+    case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false) do
+      :ok -> :ok
+      {:message, msg} ->
+        Api.create_message(msg.channel_id, content: msg)
+    end
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help", options: [%{name: "setting", value: setting}]}}=inter, _}) do
@@ -259,7 +266,32 @@ defmodule Deutexrium do
         |> put_title("Deuterium setting help")
         |> put_color(0xe6f916)
         |> put_field(name, desc)
-      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+
+    count = unless Map.has_key?(inter.data, :options) do
+      1
+    else
+      [%{name: "count", value: val}] = inter.data.options
+      val
+    end
+
+    text = 1..count
+        |> Enum.map(fn _ -> ChannelServer.generate(inter.channel_id) end)
+        |> Enum.join("\n")
+    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+  end
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
+    GuildServer.maybe_start(0)
+    ChannelServer.maybe_start({0, 0})
+
+    text = ChannelServer.generate(0)
+    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help"}}=inter, _}) do
@@ -298,7 +330,8 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **" <> target <> " " <> property <> " reset**"}})
   end
 
-  def handle_event(_event) do
-    :noop
+  def handle_event(event) do
+    Logger.warn("missed event")
+    IO.inspect(event)
   end
 end
