@@ -8,13 +8,13 @@ defmodule Deutexrium do
 
   def binary_settings do
     [
-      %{value: "collect",
+      %{value: "train",
         name: "message collection",
         description: "train the channel-specific message generation model"},
-      %{value: "gcollect",
+      %{value: "global_train",
         name: "global message collection",
         description: "thain the global message generation model shared across all channels and servers"},
-      %{value: "bot_ignoration",
+      %{value: "ignore_bots",
         name: "bot ignoration",
         description: "ignore other bot's messages"},
       %{value: "remove_mentions",
@@ -253,6 +253,8 @@ defmodule Deutexrium do
     unless msg.guild_id == nil or msg.channel_id == nil do
       GuildServer.maybe_start(msg.guild_id)
       ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
+      GuildServer.maybe_start(0)
+      ChannelServer.maybe_start({0, 0})
 
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
@@ -341,7 +343,7 @@ defmodule Deutexrium do
         |> put_field("privacy", ":lock: my privacy policy", true)
         |> put_field("support", ":thinking: ways to get support", true)
         |> put_field("scoreboard", ":100: top-10 most active users in this server", true)
-        |> put_field("rps", ":rock: start a game of Rock-Paper-Scissors with me", true)
+        # |> put_field("rps", ":rock: start a game of Rock-Paper-Scissors with me", true)
 
         |> put_field("ADMIN COMMANDS", "can only be run by those with the \"administrator\" privilege")
         |> put_field("turn server <setting> <on/off>", ":gear: turn a binary setting on or off server-wise", true)
@@ -482,7 +484,26 @@ defmodule Deutexrium do
       target == "channel" and property == "model" ->
         :ok = ChannelServer.reset(inter.channel_id, :model)
     end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **" <> target <> " " <> property <> " reset**"}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+
+    setting = :erlang.binary_to_existing_atom(setting, :utf8)
+    value = case value do
+      "on" -> true
+      "off" -> false
+      "nil" -> nil
+    end
+    case target do
+      "server" -> GuildServer.set(inter.guild_id, setting, value)
+      "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+    end
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{:erlang.atom_to_binary(value, :utf8)}`**", flags: 64}})
   end
 
 

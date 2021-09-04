@@ -33,7 +33,12 @@ defmodule Deutexrium.GuildServer do
   end
 
   @impl true
-  def handle_call({:scoreboard, author}, _from, {id, meta, timeout}=state) do
+  def handle_call({:set, setting, val}, _from, {id, meta, timeout}) do
+    {:reply, :ok, {id, Map.put(meta, setting, val), timeout}, timeout}
+  end
+
+  @impl true
+  def handle_call({:scoreboard, author}, _from, {id, meta, timeout}) do
     {:reply, :ok, {id, %{meta | user_stats: Map.put(meta.user_stats, author, Map.get(meta.user_stats, author) || 0 + 1)}, timeout}, timeout}
   end
 
@@ -90,5 +95,9 @@ defmodule Deutexrium.GuildServer do
 
   def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author) do
     get_pid(id) |> GenServer.call({:scoreboard, author})
+  end
+
+  def set(id, setting, value) when is_integer(id) and is_atom(setting) and is_atom(value) do
+    get_pid(id) |> GenServer.call({:set, setting, value})
   end
 end

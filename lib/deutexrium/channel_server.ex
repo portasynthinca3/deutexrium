@@ -50,14 +50,15 @@ defmodule Deutexrium.ChannelServer do
 
       # train local model
       model = if train do
-        %{model | data: Markov.train(model.data, message), trained_on: model.trained_on + 1}
+        %{model | data: Markov.train(model.data, message),
+          trained_on: model.trained_on + 1}
       else model
       end
 
       # train global model
       model = if global_train do
         handle_message(0, message, false, 0)
-        %{model | global_trained_on: model.global_trained_in + 1}
+        %{model | global_trained_on: model.global_trained_on + 1}
       else model
       end
 
@@ -98,6 +99,11 @@ defmodule Deutexrium.ChannelServer do
   def handle_call({:reset, :model}, _from, {{cid, _}=id, meta, _, timeout}) do
     Logger.info("channel-#{cid} server: model reset")
     {:reply, :ok, {id, meta, %Model{}, timeout}, timeout}
+  end
+
+  @impl true
+  def handle_call({:set, setting, val}, _from, {id, meta, model, timeout}) do
+    {:reply, :ok, {id, Map.put(meta, setting, val), model, timeout}, timeout}
   end
 
   @impl true
@@ -164,5 +170,9 @@ defmodule Deutexrium.ChannelServer do
 
   def reset(id, what) when is_integer(id) and is_atom(what) do
     get_pid(id) |> GenServer.call({:reset, what})
+  end
+
+  def set(id, setting, value) when is_integer(id) and is_atom(setting) and is_atom(value) do
+    get_pid(id) |> GenServer.call({:set, setting, value})
   end
 end
