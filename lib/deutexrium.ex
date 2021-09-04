@@ -349,6 +349,59 @@ defmodule Deutexrium do
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}}=inter, _}) do
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium donations")
+        |> put_color(0xe6f916)
+        |> put_field(":loudspeaker: tell your friends about the bot", "...or invite it to other servers")
+        |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
+        |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}}=inter, _}) do
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium privacy policy")
+        |> put_color(0xe6f916)
+        |> put_field("1. SCOPE", ~S"""
+           This message describes how the Deuterium Discord bot ("Deuterium", "the bot", "bot"), its creator ("I", "me") processes its Users' ("you") data.
+           """)
+        |> put_field("2. AUTHORIZATION", """
+           When you authorize the bot, it is added as a member of the server you've chosen. It has no access to your profile, direct messages or anything that is not related to the selected server.
+           """)
+        |> put_field("3. DATA PROCESSING", """
+           Deuterium receives messages it receives in server channels and processes them according to these rules:
+           - if the channel has its "message collection" setting set to "on", it trains the model on this message and saves said model do disk
+           - if the channel has its "global message collection" setting set to "on", it trains the global model on this message and saves said model do disk
+           """)
+        |> put_field("4. DATA STORAGE", """
+           Deuterium stores the following data:
+           - Channel settings and statistics (e.g. is message collection allowed, the total number of collected messages, etc.). This data can be viewed using the `/status` and `/settings` commands
+           - Local Markov chain model which consists of a set of probabilities of one word coming after another word
+           - Global Markov chain model which stores content described above
+           - Channel, user and server IDs
+           - User-to-message-count relationship for `/scoreboard`
+           Deuterium does **not** store the following data:
+           - Message content
+           - User nicknames/tags
+           - Any other data not mentioned in the list above
+           """)
+        |> put_field("5. CONTACTING", """
+           Please refer to `/support`
+           """)
+        |> put_field("6. DATA REMOVAL", """
+           Due to the nature of Markov chains, it's unfortunately not possible to remove a certain section of the data I store. Only the whole model can be reset.
+           If you wish to reset the channel model, you may use the `/reset channel model` command.
+           If you wish to reset the global model, please reach out to `/support`.
+           """)
+        |> put_field("7. DATA DISCLOSURE", """
+           I do not disclose collected data to anyone. Furthermore, I do not look at it myself.
+           """)
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
