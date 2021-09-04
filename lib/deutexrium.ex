@@ -373,6 +373,19 @@ defmodule Deutexrium do
 
 
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}}=inter, _}) do
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium resource usage")
+        |> put_color(0xe6f916)
+        |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024*1024)} MiB`")
+        |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
+        |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
+
+
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
     GuildServer.maybe_start(inter.guild_id)
     %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
