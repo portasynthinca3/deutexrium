@@ -41,7 +41,7 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_call({:message, message, by_bot}, _from, {id, meta, model, timeout}=state) do
+  def handle_call({:message, message, by_bot, author_id}, _from, {{_, guild}=id, meta, model, timeout}=state) do
     # don't train if ignoring bots
     unless by_bot and get_setting({id, meta}, :ignore_bots) do
       # check training settings
@@ -56,13 +56,13 @@ defmodule Deutexrium.ChannelServer do
 
       # train global model
       model = if global_train do
-        handle_message(0, message, false)
+        handle_message(0, message, false, 0)
         %{model | global_trained_on: model.global_trained_in + 1}
       else model
       end
 
+      # auto-generation
       {reply, meta} = cond do
-        # auto-generation
         meta.total_msgs >= meta.next_gen_milestone ->
           reply = {:message, Markov.generate_text(model.data)}
           # set new milestone
@@ -73,6 +73,9 @@ defmodule Deutexrium.ChannelServer do
 
         true -> {:ok, meta}
       end
+
+      # scoreboard
+      GuildServer.scoreboard_add_one(guild, author_id)
 
       {:reply, reply,
         {id, %{meta | total_msgs: meta.total_msgs + 1}, model, timeout}, timeout}
@@ -151,8 +154,8 @@ defmodule Deutexrium.ChannelServer do
     get_pid(id) |> GenServer.call(:get_model)
   end
 
-  def handle_message(id, msg, by_bot) when is_integer(id) and is_binary(msg) and is_boolean(by_bot) do
-    get_pid(id) |> GenServer.call({:message, msg, by_bot})
+  def handle_message(id, msg, by_bot, author_id) when is_integer(id) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
+    get_pid(id) |> GenServer.call({:message, msg, by_bot, author_id})
   end
 
   def generate(id) when is_integer(id) do

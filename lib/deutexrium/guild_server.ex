@@ -27,9 +27,14 @@ defmodule Deutexrium.GuildServer do
   end
 
   @impl true
-  def handle_call({:reset, :settings}, _from, {id, meta, timeout}) do
+  def handle_call({:reset, :settings}, _from, {id, _, timeout}) do
     Logger.info("guild-#{id} server: settings reset")
     {:reply, :ok, {id, %GuildMeta{}, timeout}, timeout}
+  end
+
+  @impl true
+  def handle_call({:scoreboard, author}, _from, {id, meta, timeout}=state) do
+    {:reply, :ok, {id, %{meta | user_stats: Map.put(meta.user_stats, author, Map.get(meta.user_stats, author) || 0 + 1)}, timeout}, timeout}
   end
 
   @impl true
@@ -81,5 +86,9 @@ defmodule Deutexrium.GuildServer do
 
   def reset(id, what) when is_integer(id) and is_atom(what) do
     get_pid(id) |> GenServer.call({:reset, what})
+  end
+
+  def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author) do
+    get_pid(id) |> GenServer.call({:scoreboard, author})
   end
 end

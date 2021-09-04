@@ -253,7 +253,7 @@ defmodule Deutexrium do
     GuildServer.maybe_start(msg.guild_id)
     ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
 
-    case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false) do
+    case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
       :ok -> :ok
       {:message, to_send} ->
         {:ok, _} = Api.create_message(msg.channel_id, to_send)
@@ -272,7 +272,7 @@ defmodule Deutexrium do
         |> put_title("Deuterium setting help")
         |> put_color(0xe6f916)
         |> put_field(name, desc)
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
 
@@ -291,7 +291,7 @@ defmodule Deutexrium do
     text = 1..count
         |> Enum.map(fn _ -> ChannelServer.generate(inter.channel_id) end)
         |> Enum.join("\n")
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
@@ -302,7 +302,7 @@ defmodule Deutexrium do
     ChannelServer.maybe_start({channel, inter.guild_id})
 
     text = ChannelServer.generate(channel)
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
@@ -312,7 +312,7 @@ defmodule Deutexrium do
     ChannelServer.maybe_start({0, 0})
 
     text = ChannelServer.generate(0)
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
@@ -346,7 +346,7 @@ defmodule Deutexrium do
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
 
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
 
@@ -368,7 +368,24 @@ defmodule Deutexrium do
         |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
         |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
+
+    embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
+    top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
+    {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
+      {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
+    end)
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{
+      embeds: [embed]
+    }})
   end
 
 
@@ -384,7 +401,7 @@ defmodule Deutexrium do
       target == "channel" and property == "model" ->
         :ok = ChannelServer.reset(inter.channel_id, :model)
     end
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **" <> target <> " " <> property <> " reset**"}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **" <> target <> " " <> property <> " reset**"}})
   end
 
 
