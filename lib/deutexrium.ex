@@ -296,6 +296,17 @@ defmodule Deutexrium do
 
 
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
+    channel = :erlang.binary_to_integer(channel)
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({channel, inter.guild_id})
+
+    text = ChannelServer.generate(channel)
+    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+  end
+
+
+
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
     GuildServer.maybe_start(0)
     ChannelServer.maybe_start({0, 0})
@@ -313,8 +324,8 @@ defmodule Deutexrium do
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
-        |> put_field("help <setting>", ":information_source: show setting information", true)
-        |> put_field("status", ":green_circle: show the current settings and stats", true)
+        |> put_field("help <setting>", ":information_source: show settings information", true)
+        |> put_field("status", ":green_circle: show the current stats", true)
         |> put_field("stats", ":yellow_circle: show how much resources I use", true)
         |> put_field("gen <count>", ":1234: generate <count> (1 if omitted) messages using the current channel's model immediately", true)
         |> put_field("gen_from #channel", ":level_slider: immediately generate a message using the mentioned channel's model", true)
@@ -330,9 +341,32 @@ defmodule Deutexrium do
         |> put_field("turn channel <setting> <on/off/nil>", ":gear: turn a binary setting on or off channel-wise, or make it use the server-wide value (nil)", true)
         |> put_field("set server <setting> <value>", ":gear: set a non-binary setting value server-wise", true)
         |> put_field("set channel <setting> <value/nil>", ":gear: set a non-binary setting value channel-wise, or make it use the server-wide value (nil)", true)
+        |> put_field("settings", ":gear: show the current settings", true)
         |> put_field("reset server settings", ":rotating_light: reset server settings", true)
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
+
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
+    GuildServer.maybe_start(inter.guild_id)
+    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+    ChannelServer.maybe_start({0, 0})
+    chan_meta = ChannelServer.get_meta(inter.channel_id)
+    chan_model = ChannelServer.get_model_stats(inter.channel_id)
+    global_model = ChannelServer.get_model_stats(0)
+    guild_meta = GuildServer.get_meta(inter.guild_id)
+
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium status")
+        |> put_color(0xe6f916)
+
+        |> put_field(":1234: Messages learned", chan_model.trained_on)
+        |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
+        |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end

@@ -35,6 +35,10 @@ defmodule Deutexrium.ChannelServer do
   def handle_call(:get_meta, _from, {_, meta, _, timeout}=state) do
     {:reply, meta, state, timeout}
   end
+  @impl true
+  def handle_call(:get_model, _from, {_, _, model, timeout}=state) do
+    {:reply, Map.delete(model, :data), state, timeout}
+  end
 
   @impl true
   def handle_call({:message, message, by_bot}, _from, {id, meta, model, timeout}=state) do
@@ -47,13 +51,14 @@ defmodule Deutexrium.ChannelServer do
       # train local model
       model = if train do
         %{model | data: Markov.train(model.data, message), trained_on: model.trained_on + 1}
-      else
-        model
+      else model
       end
 
       # train global model
-      if global_train do
+      model = if global_train do
         handle_message(0, message, false)
+        %{model | global_trained_on: model.global_trained_in + 1}
+      else model
       end
 
       {reply, meta} = cond do
@@ -136,8 +141,14 @@ defmodule Deutexrium.ChannelServer do
     end
   end
 
+  @spec get_meta(integer()) :: %Meta{}
   def get_meta(id) when is_integer(id) do
     get_pid(id) |> GenServer.call(:get_meta)
+  end
+
+  @spec get_model_stats(integer()) :: %Model{}
+  def get_model_stats(id) when is_integer(id) do
+    get_pid(id) |> GenServer.call(:get_model)
   end
 
   def handle_message(id, msg, by_bot) when is_integer(id) and is_binary(msg) and is_boolean(by_bot) do
