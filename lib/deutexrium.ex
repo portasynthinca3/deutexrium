@@ -454,6 +454,7 @@ defmodule Deutexrium do
         |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024*1024)} MiB`")
         |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
         |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
+        |> put_field("Channels in memory", "`#{ChannelServer.cnt()}`")
 
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end

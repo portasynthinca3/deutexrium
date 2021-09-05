@@ -41,7 +41,7 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_call({:message, message, by_bot, author_id}, _from, {{_, guild}=id, meta, model, timeout}=state) do
+  def handle_call({:message, message, by_bot, author_id}, _from, {{cid, guild}=id, meta, model, timeout}=state) do
     # don't train if ignoring bots
     unless by_bot and get_setting({id, meta}, :ignore_bots) do
       # check training settings
@@ -50,6 +50,7 @@ defmodule Deutexrium.ChannelServer do
 
       # train local model
       model = if train do
+        Logger.info("channel-#{cid} server: training local model")
         %{model | data: Markov.train(model.data, message),
           trained_on: model.trained_on + 1}
       else model
@@ -57,6 +58,7 @@ defmodule Deutexrium.ChannelServer do
 
       # train global model
       model = if global_train do
+        Logger.info("channel-#{cid} server: training global model")
         handle_message(0, message, false, 0)
         %{model | global_trained_on: model.global_trained_on + 1}
       else model
@@ -66,6 +68,7 @@ defmodule Deutexrium.ChannelServer do
       autorate = get_setting({id, meta}, :autogen_rate)
       {reply, meta} = cond do
         (autorate > 0) and (meta.total_msgs >= meta.next_gen_milestone) ->
+          Logger.info("channel-#{cid} server: automatic generation")
           reply = {:message, Markov.generate_text(model.data)}
           # set new milestone
           {reply, %{meta | next_gen_milestone: meta.next_gen_milestone +
@@ -86,7 +89,8 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_call(:generate, _from, {_, _, model, timeout}=state) do
+  def handle_call(:generate, _from, {{cid, _}, _, model, timeout}=state) do
+    Logger.info("channel-#{cid} server: generating on demand")
     {:reply, Markov.generate_text(model.data), state, timeout}
   end
 
@@ -102,8 +106,15 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_call({:set, setting, val}, _from, {id, meta, model, timeout}) do
+  def handle_call({:set, setting, val}, _from, {{cid, _}=id, meta, model, timeout}) do
+    Logger.info("channel-#{cid} server: settings changed")
     {:reply, :ok, {id, Map.put(meta, setting, val), model, timeout}, timeout}
+  end
+
+  @impl true
+  def handle_call(:print_chain, _from, {_, _, model, timeout}=state) do
+    Markov.print(model.data)
+    {:reply, :ok, state, timeout}
   end
 
   @impl true
@@ -169,6 +180,10 @@ defmodule Deutexrium.ChannelServer do
     end
   end
 
+  def cnt do
+    length(:ets.match(:channel_servers, :_))
+  end
+
   @type server_id() :: integer() | {integer(), integer()}
 
   @spec get_meta(server_id()) :: %Meta{}
@@ -204,5 +219,9 @@ defmodule Deutexrium.ChannelServer do
   @spec shutdown(server_id()) :: :ok
   def shutdown(id) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.call(:shutdown)
+  end
+
+  def print_chain(id) when (is_integer(id) or is_tuple(id)) do
+    get_pid(id) |> GenServer.call(:print_chain)
   end
 end
