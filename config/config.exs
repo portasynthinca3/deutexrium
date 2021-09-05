@@ -3,7 +3,7 @@ use Mix.Config
 config :deutexrium,
   data_path: "/var/deutex_data",
   channel_unload_timeout: 10 * 60 * 1000, # milliseconds
-  guild_unload_timeout: 7 * 24 * 3600 * 1000
+  guild_unload_timeout: 15 * 60 * 1000
 
 config :logger,
   level: :debug
