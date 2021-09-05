@@ -59,7 +59,7 @@ defmodule Deutexrium.ChannelServer do
       # train global model
       model = if global_train do
         Logger.info("channel-#{cid} server: training global model")
-        handle_message(0, message, false, 0)
+        handle_message({0, 0}, message, false, 0)
         %{model | global_trained_on: model.global_trained_on + 1}
       else model
       end
@@ -118,16 +118,20 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_call(:timeout, _from, state) do
-    handle_shutdown(state)
+  def handle_cast({:shutdown, freeze}, {{id, _}, _, _, _}=state) do
+    handle_shutdown(state, not freeze)
+    if freeze do
+      Logger.notice("channel-#{id} server: freezing")
+      infinite_loop()
+    end
   end
 
   @impl true
   def handle_info(:timeout, state) do
-    handle_shutdown(state)
+    handle_shutdown(state, true)
   end
 
-  defp handle_shutdown({{id, _}, meta, model, _}=_state) do
+  defp handle_shutdown({{id, _}, meta, model, _}=_state, do_exit) do
     # unload everything
     Logger.info("channel-#{id} server: unloading")
     Meta.dump!(id, meta)
@@ -135,8 +139,14 @@ defmodule Deutexrium.ChannelServer do
     Logger.info("channel-#{id} server: unloaded")
 
     # exit
-    :ets.delete(:channel_servers, id)
-    exit(:normal)
+    if do_exit do
+      :ets.delete(:channel_servers, id)
+      exit(:normal)
+    end
+  end
+
+  defp infinite_loop do
+    infinite_loop()
   end
 
 
@@ -151,7 +161,7 @@ defmodule Deutexrium.ChannelServer do
   end
 
   def start({id, guild}=arg) when is_integer(id) and is_integer(guild) do
-    {:ok, pid} = GenServer.start_link(__MODULE__, arg)
+    {:ok, pid} = GenServer.start(__MODULE__, arg)
     :ets.insert(:channel_servers, {id, pid})
     pid
   end
@@ -216,9 +226,9 @@ defmodule Deutexrium.ChannelServer do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 
-  @spec shutdown(server_id()) :: :ok
-  def shutdown(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:shutdown)
+  @spec shutdown(server_id(), boolean()) :: :ok
+  def shutdown(id, freeze) when (is_integer(id) or is_tuple(id)) do
+    get_pid(id) |> GenServer.cast({:shutdown, freeze})
   end
 
   def print_chain(id) when (is_integer(id) or is_tuple(id)) do

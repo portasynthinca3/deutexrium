@@ -459,7 +459,7 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium resource usage")
         |> put_color(0xe6f916)
-        |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024*1024)} MiB`")
+        |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024)} KiB`")
         |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
         |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
         |> put_field("Channels in memory", "`#{ChannelServer.cnt()}`")

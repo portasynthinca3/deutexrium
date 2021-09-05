@@ -43,24 +43,34 @@ defmodule Deutexrium.GuildServer do
   end
 
   @impl true
-  def handle_call(:shutdown, _from, state) do
-    handle_shutdown(state)
+  def handle_cast({:shutdown, freeze}, {id, _, _}=state) do
+    handle_shutdown(state, not freeze)
+    if freeze do
+      Logger.notice("guild-#{id} server: freezing")
+      infinite_loop()
+    end
   end
 
   @impl true
   def handle_info(:timeout, state) do
-    handle_shutdown(state)
+    handle_shutdown(state, true)
   end
 
-  defp handle_shutdown({id, meta, _}=_state) do
+  defp handle_shutdown({id, meta, _}=_state, do_exit) do
     # unload everything
     Logger.info("guild-#{id} server: unloading")
     GuildMeta.dump!(id, meta)
     Logger.info("guild-#{id} server: unloaded")
 
     # exit
-    :ets.delete(:guild_servers, id)
-    exit(:normal)
+    if do_exit do
+      :ets.delete(:guild_servers, id)
+      exit(:normal)
+    end
+  end
+
+  defp infinite_loop do
+    infinite_loop()
   end
 
 
@@ -75,7 +85,7 @@ defmodule Deutexrium.GuildServer do
   end
 
   def start(id) when is_integer(id) do
-    {:ok, pid} = GenServer.start_link(__MODULE__, id)
+    {:ok, pid} = GenServer.start(__MODULE__, id)
     :ets.insert(:guild_servers, {id, pid})
     pid
   end
@@ -114,8 +124,8 @@ defmodule Deutexrium.GuildServer do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 
-  @spec shutdown(integer()) :: :ok
-  def shutdown(id) when is_integer(id) do
-    get_pid(id) |> GenServer.call(:shutdown)
+  @spec shutdown(integer(), boolean()) :: :ok
+  def shutdown(id, freeze) when is_integer(id) do
+    get_pid(id) |> GenServer.cast({:shutdown, freeze})
   end
 end
