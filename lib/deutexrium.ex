@@ -272,7 +272,9 @@ defmodule Deutexrium do
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
         {:ok, _} = Api.create_message(msg.channel_id, content: """
-        :sparkles: **The bot is now using slash commands! Try `/help`** :sparkles:
+        :sparkles: **I am now using slash commands! Try `/help`** :sparkles:
+        If /help doesn't work, please kick me and re-authorize using this link:
+        https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands
         _(this message will stop apperaing on Oct 1st 2021)_
         """)
       end
@@ -303,25 +305,29 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
-    count = unless Map.has_key?(inter.data, :options) do
-      1
-    else
-      [%{name: "count", value: val}] = inter.data.options
-      val
-    end
+    unless inter_notice(inter) do
+      count = unless Map.has_key?(inter.data, :options) do
+        1
+      else
+        [%{name: "count", value: val}] = inter.data.options
+        val
+      end
 
-    text = 1..count
-        |> Enum.map(fn _ -> ChannelServer.generate({inter.channel_id, inter.guild_id}) end)
-        |> Enum.join("\n")
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+      text = 1..count
+          |> Enum.map(fn _ -> ChannelServer.generate({inter.channel_id, inter.guild_id}) end)
+          |> Enum.join("\n")
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    end
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
-    channel = :erlang.binary_to_integer(channel)
-    text = ChannelServer.generate({channel, inter.guild_id})
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    unless inter_notice(inter) do
+      channel = :erlang.binary_to_integer(channel)
+      text = ChannelServer.generate({channel, inter.guild_id})
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    end
   end
 
 
@@ -431,18 +437,20 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
-    chan_model = ChannelServer.get_model_stats({inter.channel_id, inter.guild_id})
-    global_model = ChannelServer.get_model_stats({0, 0})
+    unless inter_notice(inter) do
+      chan_model = ChannelServer.get_model_stats({inter.channel_id, inter.guild_id})
+      global_model = ChannelServer.get_model_stats({0, 0})
 
-    embed = %Struct.Embed{}
-        |> put_title("Deuterium status")
-        |> put_color(0xe6f916)
+      embed = %Struct.Embed{}
+          |> put_title("Deuterium status")
+          |> put_color(0xe6f916)
 
-        |> put_field(":1234: Messages learned", chan_model.trained_on)
-        |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
-        |> put_field(":1234: Total messages in the global model", global_model.trained_on)
+          |> put_field(":1234: Messages learned", chan_model.trained_on)
+          |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
+          |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    end
   end
 
 
@@ -462,15 +470,17 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
-    %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
+    unless inter_notice(inter) do
+      %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
 
-    embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
-    top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
-    {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
-      {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
-    end)
+      embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
+      top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
+      {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
+        {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
+      end)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    end
   end
 
 
@@ -555,7 +565,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event(event) do
+  def handle_event(_event) do
     :noop
   end
 
@@ -572,5 +582,16 @@ defmodule Deutexrium do
     guild = Nostrum.Cache.GuildCache.get!(inter.guild_id)
     perms = Nostrum.Struct.Guild.Member.guild_permissions(inter.member, guild)
     :administrator in perms
+  end
+
+  defp inter_notice(inter) do
+    invalid = inter.guild_id == nil
+    if invalid do
+      Logger.warn("interaction in #{inter.channel_id} has guild_id=nil")
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I don't have slash command permissions. Please kick me and re-authorize using this link: https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands**", flags: 64}})
+      true
+    else
+      false
+    end
   end
 end
