@@ -64,7 +64,7 @@ defmodule Deutexrium.ChannelServer do
 
       # auto-generation
       {reply, meta} = cond do
-        meta.total_msgs >= meta.next_gen_milestone ->
+        (meta.autogen_rate > 0) and (meta.total_msgs >= meta.next_gen_milestone) ->
           reply = {:message, Markov.generate_text(model.data)}
           # set new milestone
           autorate = get_setting({id, meta}, :autogen_rate)

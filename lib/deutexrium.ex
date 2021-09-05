@@ -527,7 +527,7 @@ defmodule Deutexrium do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
         "channel" -> ChannelServer.set(inter.channel_id, setting, value)
       end
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
       {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
@@ -548,7 +548,7 @@ defmodule Deutexrium do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
         "channel" -> ChannelServer.set(inter.channel_id, setting, value)
       end
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
       {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
@@ -591,15 +591,13 @@ defmodule Deutexrium do
       nil -> ":o: **nil**"
       true -> ":white_check_mark: **on**"
       false -> ":x: **off**"
-      val when is_number(val) -> ":1234: **#{val}**"
-      val when is_binary(val) -> ":record_button: **#{val}**"
+      val -> "#{val}"
     end
   end
 
   defp check_admin_perm(inter) do
     guild = Nostrum.Cache.GuildCache.get!(inter.guild_id)
     perms = Nostrum.Struct.Guild.Member.guild_permissions(inter.member, guild)
-    IO.inspect(perms)
     :administrator in perms
   end
 end
