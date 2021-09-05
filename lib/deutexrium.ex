@@ -248,7 +248,8 @@ defmodule Deutexrium do
       ]
     } | commands]
 
-    {:ok, _} = Api.bulk_overwrite_guild_application_commands(765604415427575828, commands)
+    # {:ok, _} = Api.bulk_overwrite_guild_application_commands(765604415427575828, commands)
+    {:ok, _} = Api.bulk_overwrite_global_application_commands(commands)
   end
 
 
@@ -275,7 +276,10 @@ defmodule Deutexrium do
 
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
-        {:ok, _} = Api.create_message(msg.channel_id, content: ":sparkles: **The bot is now using slash commands! Try `/help`** :sparkles:")
+        {:ok, _} = Api.create_message(msg.channel_id, content: """
+        :sparkles: **The bot is now using slash commands! Try `/help`** :sparkles:
+        _(this message will stop apperaing on Oct 1st 2021)__
+        """)
       end
 
       case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
@@ -568,8 +572,7 @@ defmodule Deutexrium do
 
 
   def handle_event(event) do
-    Logger.warn("missed event")
-    IO.inspect(event)
+    :noop
   end
 
   defp setting_prettify(val) do
