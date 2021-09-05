@@ -3,7 +3,7 @@
 Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Discord bot that automatically generates messages based on the previously seen ones on a per-channel basis.
 
 ## Use an existing one
-[Just invite it to your server](https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot)
+[Just invite it to your server](https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands)
 
 ## Run your own
 
