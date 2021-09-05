@@ -261,7 +261,7 @@ defmodule Deutexrium do
   end
 
   def handle_event({:READY, _, _}) do
-    add_slash_commands()
+    # add_slash_commands()
     Logger.info("ready")
   end
 

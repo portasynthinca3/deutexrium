@@ -1,5 +1,16 @@
+[![Discord Bots](https://top.gg/api/widget/status/733605243396554813.svg)](https://top.gg/bot/733605243396554813)
 # Deutexrium
-Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite
+Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Discord bot that automatically generates messages based on the previously seen ones on a per-channel basis.
 
-## Configuration
-Set the `DEUTEX_TOKEN` environment variable to the bot token
+## Use an existing one
+[Just invite it to your server](https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot)
+
+## Run your own
+
+### Setting up
+  - install Elixir and Mix
+  - run `mix deps.get`
+  - tweak self-explanatory settings in `config/config.exs` (optional)
+
+### Running
+Something like `DEUTEX_TOKEN=... iex -S mix`
