@@ -214,7 +214,7 @@ defmodule Deutexrium do
           type: 1, # subcommand
           options: [
             %{
-              type: 3, #string
+              type: 3, # string
               name: "setting",
               description: "the setting to modify",
               choices: non_binary_settings() |> Enum.map(fn val -> Map.delete(val, :description) end),
@@ -227,6 +227,23 @@ defmodule Deutexrium do
               required: true
             }
           ]
+        }
+      ]
+    } | commands]
+
+    commands = [%{
+      name: "settings",
+      description: "display settings values",
+      options: [
+        %{
+          name: "server",
+          description: "display server settings",
+          type: 1, # subcommand
+        },
+        %{
+          name: "channel",
+          description: "display channel settings",
+          type: 1, # subcommand
         }
       ]
     } | commands]
@@ -350,7 +367,7 @@ defmodule Deutexrium do
         |> put_field("turn channel <setting> <on/off/nil>", ":gear: turn a binary setting on or off channel-wise, or make it use the server-wide value (nil)", true)
         |> put_field("set server <setting> <value>", ":gear: set a non-binary setting value server-wise", true)
         |> put_field("set channel <setting> <value/nil>", ":gear: set a non-binary setting value channel-wise, or make it use the server-wide value (nil)", true)
-        |> put_field("settings", ":gear: show the current settings", true)
+        |> put_field("settings <server/channel>", ":gear: show the current settings", true)
         |> put_field("reset server settings", ":rotating_light: reset server settings", true)
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
@@ -424,13 +441,10 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
-    GuildServer.maybe_start(inter.guild_id)
     ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
     ChannelServer.maybe_start({0, 0})
-    chan_meta = ChannelServer.get_meta(inter.channel_id)
     chan_model = ChannelServer.get_model_stats(inter.channel_id)
     global_model = ChannelServer.get_model_stats(0)
-    guild_meta = GuildServer.get_meta(inter.guild_id)
 
     embed = %Struct.Embed{}
         |> put_title("Deuterium status")
@@ -503,7 +517,7 @@ defmodule Deutexrium do
       "server" -> GuildServer.set(inter.guild_id, setting, value)
       "channel" -> ChannelServer.set(inter.channel_id, setting, value)
     end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{:erlang.atom_to_binary(value, :utf8)}`**", flags: 64}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
   end
 
 
@@ -520,7 +534,29 @@ defmodule Deutexrium do
       "server" -> GuildServer.set(inter.guild_id, setting, value)
       "channel" -> ChannelServer.set(inter.channel_id, setting, value)
     end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{value}`**", flags: 64}})
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings", options: [%{name: target}]}}=inter, _}) do
+    meta = case target do
+      "server" ->
+        GuildServer.maybe_start(inter.guild_id)
+        GuildServer.get_meta(inter.guild_id)
+      "channel" ->
+        ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+        ChannelServer.get_meta(inter.channel_id)
+    end
+
+    embed = %Struct.Embed{}
+        |> put_title("Deuterium #{target} settings")
+        |> put_color(0xe6f916)
+    embed = Enum.reduce(Enum.concat(binary_settings(), non_binary_settings()), embed, fn elm, acc ->
+      acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
+    end)
+
+    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -528,5 +564,15 @@ defmodule Deutexrium do
   def handle_event(event) do
     Logger.warn("missed event")
     IO.inspect(event)
+  end
+
+  defp setting_prettify(val) do
+    case val do
+      nil -> ":o: **nil**"
+      true -> ":white_check_mark: **on**"
+      false -> ":x: **off**"
+      val when is_number(val) -> ":1234: **#{val}**"
+      val when is_binary(val) -> ":record_button: **#{val}**"
+    end
   end
 end
