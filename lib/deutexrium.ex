@@ -269,11 +269,6 @@ defmodule Deutexrium do
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{}=msg, _}) do
     unless msg.guild_id == nil or msg.channel_id == nil do
-      GuildServer.maybe_start(msg.guild_id)
-      ChannelServer.maybe_start({msg.channel_id, msg.guild_id})
-      GuildServer.maybe_start(0)
-      ChannelServer.maybe_start({0, 0})
-
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
         {:ok, _} = Api.create_message(msg.channel_id, content: """
@@ -282,7 +277,7 @@ defmodule Deutexrium do
         """)
       end
 
-      case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
+      case ChannelServer.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
         :ok -> :ok
         {:message, to_send} ->
           Api.create_message(msg.channel_id, to_send)
@@ -308,9 +303,6 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
-    GuildServer.maybe_start(inter.guild_id)
-    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-
     count = unless Map.has_key?(inter.data, :options) do
       1
     else
@@ -319,7 +311,7 @@ defmodule Deutexrium do
     end
 
     text = 1..count
-        |> Enum.map(fn _ -> ChannelServer.generate(inter.channel_id) end)
+        |> Enum.map(fn _ -> ChannelServer.generate({inter.channel_id, inter.guild_id}) end)
         |> Enum.join("\n")
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
@@ -328,20 +320,14 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
     channel = :erlang.binary_to_integer(channel)
-    GuildServer.maybe_start(inter.guild_id)
-    ChannelServer.maybe_start({channel, inter.guild_id})
-
-    text = ChannelServer.generate(channel)
+    text = ChannelServer.generate({channel, inter.guild_id})
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
-    GuildServer.maybe_start(0)
-    ChannelServer.maybe_start({0, 0})
-
-    text = ChannelServer.generate(0)
+    text = ChannelServer.generate({0, 0})
     {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
@@ -445,10 +431,8 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
-    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-    ChannelServer.maybe_start({0, 0})
-    chan_model = ChannelServer.get_model_stats(inter.channel_id)
-    global_model = ChannelServer.get_model_stats(0)
+    chan_model = ChannelServer.get_model_stats({inter.channel_id, inter.guild_id})
+    global_model = ChannelServer.get_model_stats({0, 0})
 
     embed = %Struct.Embed{}
         |> put_title("Deuterium status")
@@ -477,7 +461,6 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
-    GuildServer.maybe_start(inter.guild_id)
     %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
 
     embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
@@ -493,16 +476,13 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
     if check_admin_perm(inter) do
-      GuildServer.maybe_start(inter.guild_id)
-      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-
       cond do
         target == "server" and property == "settings" ->
           :ok = GuildServer.reset(inter.guild_id, :settings)
         target == "channel" and property == "settings" ->
-          :ok = ChannelServer.reset(inter.channel_id, :settings)
+          :ok = ChannelServer.reset({inter.channel_id, inter.guild_id}, :settings)
         target == "channel" and property == "model" ->
-          :ok = ChannelServer.reset(inter.channel_id, :model)
+          :ok = ChannelServer.reset({inter.channel_id, inter.guild_id}, :model)
       end
       {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
     else
@@ -514,9 +494,6 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
     if check_admin_perm(inter) do
-      GuildServer.maybe_start(inter.guild_id)
-      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-
       setting = :erlang.binary_to_existing_atom(setting, :utf8)
       value = case value do
         "on" -> true
@@ -525,7 +502,7 @@ defmodule Deutexrium do
       end
       case target do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
-        "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+        "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
       end
       {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
@@ -537,16 +514,13 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
     if check_admin_perm(inter) do
-      GuildServer.maybe_start(inter.guild_id)
-      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-
       setting = :erlang.binary_to_existing_atom(setting, :utf8)
       value = case setting do
         :autogen_rate -> :erlang.binary_to_integer(value)
       end
       case target do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
-        "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+        "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
       end
       {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
@@ -560,11 +534,9 @@ defmodule Deutexrium do
     if check_admin_perm(inter) do
       meta = case target do
         "server" ->
-          GuildServer.maybe_start(inter.guild_id)
           GuildServer.get_meta(inter.guild_id)
         "channel" ->
-          ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-          ChannelServer.get_meta(inter.channel_id)
+          ChannelServer.get_meta({inter.channel_id, inter.guild_id})
       end
 
       embed = %Struct.Embed{}

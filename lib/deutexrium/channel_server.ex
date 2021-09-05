@@ -152,45 +152,57 @@ defmodule Deutexrium.ChannelServer do
     end
   end
 
+  def get_pid({id, gid}) when is_integer(id) and is_integer(gid) do
+    case :ets.lookup(:channel_servers, id) do
+      [{_, pid}] -> pid
+      [] ->
+        GuildServer.maybe_start(gid)
+        start({id, gid})
+    end
+  end
   def get_pid(id) when is_integer(id) do
     case :ets.lookup(:channel_servers, id) do
       [{_, pid}] -> pid
-      [] -> :nopid
+      [] ->
+        Logger.error("can't start non-existent channel-#{id} server because gid is unknown")
+        :nopid
     end
   end
 
-  @spec get_meta(integer()) :: %Meta{}
-  def get_meta(id) when is_integer(id) do
+  @type server_id() :: integer() | {integer(), integer()}
+
+  @spec get_meta(server_id()) :: %Meta{}
+  def get_meta(id) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.call(:get_meta)
   end
 
-  @spec get_model_stats(integer()) :: %Model{}
-  def get_model_stats(id) when is_integer(id) do
+  @spec get_model_stats(server_id()) :: %Model{}
+  def get_model_stats(id) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.call(:get_model)
   end
 
-  @spec handle_message(integer(), String.t(), boolean(), integer()) :: :ok | {:message, String.t()}
-  def handle_message(id, msg, by_bot, author_id) when is_integer(id) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
+  @spec handle_message(server_id(), String.t(), boolean(), integer()) :: :ok | {:message, String.t()}
+  def handle_message(id, msg, by_bot, author_id) when (is_integer(id) or is_tuple(id)) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
     get_pid(id) |> GenServer.call({:message, msg, by_bot, author_id})
   end
 
-  @spec generate(integer()) :: String.t()
-  def generate(id) when is_integer(id) do
+  @spec generate(server_id()) :: String.t()
+  def generate(id) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.call(:generate)
   end
 
-  @spec reset(integer(), atom()) :: :ok
-  def reset(id, what) when is_integer(id) and is_atom(what) do
+  @spec reset(server_id(), atom()) :: :ok
+  def reset(id, what) when (is_integer(id) or is_tuple(id)) and is_atom(what) do
     get_pid(id) |> GenServer.call({:reset, what})
   end
 
-  @spec set(integer(), atom(), any()) :: :ok
-  def set(id, setting, value) when is_integer(id) and is_atom(setting) do
+  @spec set(server_id(), atom(), any()) :: :ok
+  def set(id, setting, value) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 
-  @spec shutdown(integer()) :: :ok
-  def shutdown(id) when is_integer(id) do
+  @spec shutdown(server_id()) :: :ok
+  def shutdown(id) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.call(:shutdown)
   end
 end
