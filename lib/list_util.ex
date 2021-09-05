@@ -1,10 +1,9 @@
 defmodule ListUtil do
-  @spec pairs(list()) :: list()
-  def pairs(list) do
-    first_elements = Enum.reverse(list)
-        |> tl
-        |> Enum.reverse
-    second_elements = tl(list)
-    Enum.zip(first_elements, second_elements)
+  @spec ttuples(list()) :: list()
+  def ttuples(list) do
+    first_elements = list |> Enum.reverse |> tl() |> tl() |> Enum.reverse
+    second_elements = list |> tl() |> Enum.reverse |> tl() |> Enum.reverse
+    third_elements = list |> tl() |> tl()
+    Enum.zip([first_elements, second_elements, third_elements])
   end
 end

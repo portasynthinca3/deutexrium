@@ -16,14 +16,21 @@ defmodule Deutexrium.ChannelServer do
   def init({id, guild}) do
     # load model and meta
     Logger.info("channel-#{id} server: loading")
-    {meta, model} = try do
-      {Meta.load!(id), Model.load!(id)}
+    meta = try do
+      Meta.load!(id)
     rescue
       _ ->
-        Logger.info("channel-#{id} server: creating new model and meta")
+        Logger.info("channel-#{id} server: creating new meta")
         Meta.dump!(id, %Meta{})
+        %Meta{}
+    end
+    model = try do
+      Model.load!(id)
+    rescue
+      _ ->
+        Logger.info("channel-#{id} server: creating new model")
         Model.dump!(id, %Model{})
-        {%Meta{}, %Model{}}
+        %Model{}
     end
     Logger.info("channel-#{id} server: loaded")
 
@@ -109,12 +116,6 @@ defmodule Deutexrium.ChannelServer do
   def handle_call({:set, setting, val}, _from, {{cid, _}=id, meta, model, timeout}) do
     Logger.info("channel-#{cid} server: settings changed")
     {:reply, :ok, {id, Map.put(meta, setting, val), model, timeout}, timeout}
-  end
-
-  @impl true
-  def handle_call(:print_chain, _from, {_, _, model, timeout}=state) do
-    Markov.print(model.data)
-    {:reply, :ok, state, timeout}
   end
 
   @impl true
@@ -229,9 +230,5 @@ defmodule Deutexrium.ChannelServer do
   @spec shutdown(server_id(), boolean()) :: :ok
   def shutdown(id, freeze) when (is_integer(id) or is_tuple(id)) do
     get_pid(id) |> GenServer.cast({:shutdown, freeze})
-  end
-
-  def print_chain(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:print_chain)
   end
 end

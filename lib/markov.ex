@@ -1,44 +1,30 @@
 defmodule Markov do
-  defstruct nodes: [:start, :end], links: %{start: %{end: 1}, end: %{}}
+  defstruct links: %{[:start, :start] => %{end: 1}, end: %{}}
 
   require Logger
 
   @spec train(%Markov{}, String.t()) :: %Markov{}
   def train(%Markov{}=chain, text) when is_binary(text) do
     tokens = String.split(text)
-    tokens = [:start | tokens ++ [:end]] # add start and end states
-
-    # add new nodes to the chain
-    new_tokens = tokens -- chain.nodes
-    chain = %{chain | nodes: chain.nodes ++ new_tokens}
-    # initialize links too
-    links = Enum.reduce new_tokens, chain.links, fn token, acc ->
-       Map.put(acc, token, %{})
-    end
-    chain = %{chain | links: links}
+    tokens = [:start, :start] ++ tokens ++ [:end] # add start and end tokens
 
     # adjust link weights
-    new_links = Enum.reduce ListUtil.pairs(tokens), chain.links, fn {first, second}, acc ->
-      links_from_first = acc[first]
-      if links_from_first[second] == nil do
-        Map.put(acc, first, Map.put(links_from_first, second, 1))
+    new_links = Enum.reduce ListUtil.ttuples(tokens), chain.links, fn {first, second, third}, acc ->
+      from = [first, second]
+      to = third
+      links_from = acc[from]
+      links_from = if links_from == nil do %{} else links_from end
+      if links_from[to] == nil do
+        Map.put(acc, from, Map.put(links_from, to, 1))
       else
-        Map.put(acc, first, Map.put(links_from_first, second, links_from_first[second] + 1))
+        Map.put(acc, from, Map.put(links_from, to, links_from[to] + 1))
       end
     end
     # forcefully break the start -> end link
-    new_links = Map.put(new_links, :start, Map.delete(new_links.start, :end))
+    new_links = Map.put(new_links, [:start, :start], Map.delete(new_links[[:start, :start]], :end))
     chain = %{chain | links: new_links}
 
     chain
-  end
-
-  defp probabilistic_select(number, [{name, add} | tail], sum, acc \\ 0) do
-    if (number >= acc) and (number <= acc + add) do
-      name
-    else
-      probabilistic_select(number, tail, sum, acc + add)
-    end
   end
 
   @spec next_state(%Markov{}, any()) :: any()
@@ -55,11 +41,11 @@ defmodule Markov do
   end
 
   @spec generate_text(%Markov{}, acc :: String.t(), any()) :: String.t()
-  def generate_text(%Markov{}=chain, acc \\ "", state \\ :start) do
-    state = next_state(chain, state)
-    unless state == :end do
-      acc = acc <> state <> " "
-      generate_text(chain, acc, state)
+  def generate_text(%Markov{}=chain, acc \\ "", state \\ [:start, :start]) do
+    new_state = next_state(chain, state)
+    unless new_state == :end do
+      acc = acc <> new_state <> " "
+      generate_text(chain, acc, [Enum.at(state, 1), new_state])
     else
       str = String.trim(acc)
       if str == "" do
@@ -70,19 +56,11 @@ defmodule Markov do
     end
   end
 
-  defp prettify_node(str) when is_binary(str) do str end
-  defp prettify_node(atom) when is_atom(atom) do "<" <> Atom.to_string(atom) <> ">" end
-
-  @spec print(%Markov{}) :: nil
-  def print(%Markov{}=chain) do
-    IO.puts("chain")
-    for node <- chain.nodes do
-      IO.puts("|-- node: #{prettify_node(node)}")
-      links = chain.links[node]
-      for {link, weight} <- links do
-        IO.puts("|   |-- link: to #{prettify_node(link)} (rel. probability: #{weight})")
-      end
+  defp probabilistic_select(number, [{name, add} | tail], sum, acc \\ 0) do
+    if (number >= acc) and (number <= acc + add) do
+      name
+    else
+      probabilistic_select(number, tail, sum, acc + add)
     end
-    nil
   end
 end
