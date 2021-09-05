@@ -285,7 +285,7 @@ defmodule Deutexrium do
       case ChannelServer.handle_message(msg.channel_id, msg.content, msg.author.bot || false, msg.author.id) do
         :ok -> :ok
         {:message, to_send} ->
-          {:ok, _} = Api.create_message(msg.channel_id, to_send)
+          Api.create_message(msg.channel_id, to_send)
       end
     end
   end

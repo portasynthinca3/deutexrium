@@ -43,7 +43,16 @@ defmodule Deutexrium.GuildServer do
   end
 
   @impl true
-  def handle_info(:timeout, {id, meta, _}) do
+  def handle_call(:shutdown, _from, state) do
+    handle_shutdown(state)
+  end
+
+  @impl true
+  def handle_info(:timeout, state) do
+    handle_shutdown(state)
+  end
+
+  defp handle_shutdown({id, meta, _}=_state) do
     # unload everything
     Logger.info("guild-#{id} server: unloading")
     GuildMeta.dump!(id, meta)
@@ -85,19 +94,28 @@ defmodule Deutexrium.GuildServer do
     end
   end
 
+  @spec get_meta(integer()) :: %GuildMeta{}
   def get_meta(id) when is_integer(id) do
     get_pid(id) |> GenServer.call(:get_meta)
   end
 
+  @spec reset(integer(), atom()) :: :ok
   def reset(id, what) when is_integer(id) and is_atom(what) do
     get_pid(id) |> GenServer.call({:reset, what})
   end
 
+  @spec scoreboard_add_one(integer(), integer()) :: :ok
   def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author) do
     get_pid(id) |> GenServer.call({:scoreboard, author})
   end
 
+  @spec set(integer(), atom(), any()) :: :ok
   def set(id, setting, value) when is_integer(id) and is_atom(setting) do
     get_pid(id) |> GenServer.call({:set, setting, value})
+  end
+
+  @spec shutdown(integer()) :: :ok
+  def shutdown(id) when is_integer(id) do
+    get_pid(id) |> GenServer.call(:shutdown)
   end
 end

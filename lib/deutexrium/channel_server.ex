@@ -63,11 +63,11 @@ defmodule Deutexrium.ChannelServer do
       end
 
       # auto-generation
+      autorate = get_setting({id, meta}, :autogen_rate)
       {reply, meta} = cond do
-        (meta.autogen_rate > 0) and (meta.total_msgs >= meta.next_gen_milestone) ->
+        (autorate > 0) and (meta.total_msgs >= meta.next_gen_milestone) ->
           reply = {:message, Markov.generate_text(model.data)}
           # set new milestone
-          autorate = get_setting({id, meta}, :autogen_rate)
           {reply, %{meta | next_gen_milestone: meta.next_gen_milestone +
               autorate +
               :rand.uniform(autorate) - div(autorate, 2)}}
@@ -107,7 +107,16 @@ defmodule Deutexrium.ChannelServer do
   end
 
   @impl true
-  def handle_info(:timeout, {{id, _}, meta, model, _}) do
+  def handle_call(:timeout, _from, state) do
+    handle_shutdown(state)
+  end
+
+  @impl true
+  def handle_info(:timeout, state) do
+    handle_shutdown(state)
+  end
+
+  defp handle_shutdown({{id, _}, meta, model, _}=_state) do
     # unload everything
     Logger.info("channel-#{id} server: unloading")
     Meta.dump!(id, meta)
@@ -160,19 +169,28 @@ defmodule Deutexrium.ChannelServer do
     get_pid(id) |> GenServer.call(:get_model)
   end
 
+  @spec handle_message(integer(), String.t(), boolean(), integer()) :: :ok | {:message, String.t()}
   def handle_message(id, msg, by_bot, author_id) when is_integer(id) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
     get_pid(id) |> GenServer.call({:message, msg, by_bot, author_id})
   end
 
+  @spec generate(integer()) :: String.t()
   def generate(id) when is_integer(id) do
     get_pid(id) |> GenServer.call(:generate)
   end
 
+  @spec reset(integer(), atom()) :: :ok
   def reset(id, what) when is_integer(id) and is_atom(what) do
     get_pid(id) |> GenServer.call({:reset, what})
   end
 
+  @spec set(integer(), atom(), any()) :: :ok
   def set(id, setting, value) when is_integer(id) and is_atom(setting) do
     get_pid(id) |> GenServer.call({:set, setting, value})
+  end
+
+  @spec shutdown(integer()) :: :ok
+  def shutdown(id) when is_integer(id) do
+    get_pid(id) |> GenServer.call(:shutdown)
   end
 end

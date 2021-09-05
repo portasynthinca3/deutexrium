@@ -2,14 +2,17 @@ use Mix.Config
 
 config :deutexrium,
   data_path: "/var/deutex_data",
-  channel_unload_timeout: 10 * 60 * 1000, # milliseconds
-  guild_unload_timeout: 15 * 60 * 1000
+  channel_unload_timeout: 5 * 60 * 1000, # milliseconds
+  guild_unload_timeout: 7 * 60 * 1000
 
 config :logger,
-  level: :debug
-
+  level: :debug,
+  backends: [:console, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel]
+config :logger, :debug_log,
+  path: "deuterium.log",
+  level: :debug
 
 config :nostrum,
   token: System.get_env("DEUTEX_TOKEN"),

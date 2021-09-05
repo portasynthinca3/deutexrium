@@ -7,7 +7,7 @@ defmodule Deutexrium.Sup do
 
   @impl true
   def init(_init_arg) do
-    children = [Deutexrium]
+    children = [%{id: Deutexrium, start: {Deutexrium, :start_link, []}}]
 
     Supervisor.init(children, strategy: :one_for_one)
   end

@@ -23,3 +23,4 @@ erl_crash.dump
 deutexrium-*.tar
 
 /.elixir_ls/
+/deuterium.log

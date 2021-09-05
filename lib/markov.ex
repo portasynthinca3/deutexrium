@@ -41,6 +41,7 @@ defmodule Markov do
     end
   end
 
+  @spec next_state(%Markov{}, any()) :: any()
   def next_state(%Markov{}=chain, current) do
     # get links from current state
     # (enforce constant order by converting to proplist)
@@ -53,6 +54,7 @@ defmodule Markov do
     :rand.uniform(sum + 1) - 1 |> probabilistic_select(links, sum)
   end
 
+  @spec generate_text(%Markov{}, acc :: String.t(), any()) :: String.t()
   def generate_text(%Markov{}=chain, acc \\ "", state \\ :start) do
     state = next_state(chain, state)
     unless state == :end do
