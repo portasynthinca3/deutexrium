@@ -15,5 +15,5 @@ config :porcelain,
 
 config :deutexrium,
   data_path: "/var/deutex_data",
-  channel_unload_timeout: 30 * 1000, # milliseconds
-  guild_unload_timeout: 60 * 1000
+  channel_unload_timeout: 10 * 60 * 1000, # milliseconds
+  guild_unload_timeout: 7 * 24 * 3600 * 1000

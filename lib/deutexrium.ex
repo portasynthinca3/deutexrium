@@ -278,7 +278,7 @@ defmodule Deutexrium do
       if String.starts_with?(msg.content, "!!d ") do
         {:ok, _} = Api.create_message(msg.channel_id, content: """
         :sparkles: **The bot is now using slash commands! Try `/help`** :sparkles:
-        _(this message will stop apperaing on Oct 1st 2021)__
+        _(this message will stop apperaing on Oct 1st 2021)_
         """)
       end
 
