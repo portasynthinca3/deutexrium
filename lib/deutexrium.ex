@@ -488,8 +488,10 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
+    check_admin_perm(inter)
     GuildServer.maybe_start(inter.guild_id)
     ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+
     cond do
       target == "server" and property == "settings" ->
         :ok = GuildServer.reset(inter.guild_id, :settings)
@@ -504,6 +506,7 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+    check_admin_perm(inter)
     GuildServer.maybe_start(inter.guild_id)
     ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
 
@@ -523,6 +526,7 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+    check_admin_perm(inter)
     GuildServer.maybe_start(inter.guild_id)
     ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
 
@@ -540,6 +544,8 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings", options: [%{name: target}]}}=inter, _}) do
+    check_admin_perm(inter)
+
     meta = case target do
       "server" ->
         GuildServer.maybe_start(inter.guild_id)
@@ -574,5 +580,11 @@ defmodule Deutexrium do
       val when is_number(val) -> ":1234: **#{val}**"
       val when is_binary(val) -> ":record_button: **#{val}**"
     end
+  end
+
+  defp check_admin_perm(inter) do
+    guild = Nostrum.Cache.GuildCache.get!(inter.guild_id)
+    perms = Nostrum.Struct.Guild.Member.guild_permissions(inter.member, guild)
+    :administrator in perms
   end
 end
