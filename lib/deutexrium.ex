@@ -134,7 +134,7 @@ defmodule Deutexrium do
       options: [
         %{
           name: "server",
-          description: "modify a binary setting server-wise",
+          description: "modify a binary setting server-wide",
           type: 1, # subcommand
           options: [
             %{
@@ -190,7 +190,7 @@ defmodule Deutexrium do
       options: [
         %{
           name: "server",
-          description: "modify a non-binary setting server-wise",
+          description: "modify a non-binary setting server-wide",
           type: 1, # subcommand
           options: [
             %{
@@ -363,9 +363,9 @@ defmodule Deutexrium do
         # |> put_field("rps", ":rock: start a game of Rock-Paper-Scissors with me", true)
 
         |> put_field("ADMIN COMMANDS", "can only be run by those with the \"administrator\" privilege")
-        |> put_field("turn server <setting> <on/off>", ":gear: turn a binary setting on or off server-wise", true)
+        |> put_field("turn server <setting> <on/off>", ":gear: turn a binary setting on or off server-wide", true)
         |> put_field("turn channel <setting> <on/off/nil>", ":gear: turn a binary setting on or off channel-wise, or make it use the server-wide value (nil)", true)
-        |> put_field("set server <setting> <value>", ":gear: set a non-binary setting value server-wise", true)
+        |> put_field("set server <setting> <value>", ":gear: set a non-binary setting value server-wide", true)
         |> put_field("set channel <setting> <value/nil>", ":gear: set a non-binary setting value channel-wise, or make it use the server-wide value (nil)", true)
         |> put_field("settings <server/channel>", ":gear: show the current settings", true)
         |> put_field("reset server settings", ":rotating_light: reset server settings", true)
