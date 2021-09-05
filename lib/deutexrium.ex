@@ -492,81 +492,92 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
-    check_admin_perm(inter)
-    GuildServer.maybe_start(inter.guild_id)
-    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+    if check_admin_perm(inter) do
+      GuildServer.maybe_start(inter.guild_id)
+      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
 
-    cond do
-      target == "server" and property == "settings" ->
-        :ok = GuildServer.reset(inter.guild_id, :settings)
-      target == "channel" and property == "settings" ->
-        :ok = ChannelServer.reset(inter.channel_id, :settings)
-      target == "channel" and property == "model" ->
-        :ok = ChannelServer.reset(inter.channel_id, :model)
+      cond do
+        target == "server" and property == "settings" ->
+          :ok = GuildServer.reset(inter.guild_id, :settings)
+        target == "channel" and property == "settings" ->
+          :ok = ChannelServer.reset(inter.channel_id, :settings)
+        target == "channel" and property == "model" ->
+          :ok = ChannelServer.reset(inter.channel_id, :model)
+      end
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
+    else
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
-    check_admin_perm(inter)
-    GuildServer.maybe_start(inter.guild_id)
-    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+    if check_admin_perm(inter) do
+      GuildServer.maybe_start(inter.guild_id)
+      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
 
-    setting = :erlang.binary_to_existing_atom(setting, :utf8)
-    value = case value do
-      "on" -> true
-      "off" -> false
-      "nil" -> nil
+      setting = :erlang.binary_to_existing_atom(setting, :utf8)
+      value = case value do
+        "on" -> true
+        "off" -> false
+        "nil" -> nil
+      end
+      case target do
+        "server" -> GuildServer.set(inter.guild_id, setting, value)
+        "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+      end
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
+    else
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
-    case target do
-      "server" -> GuildServer.set(inter.guild_id, setting, value)
-      "channel" -> ChannelServer.set(inter.channel_id, setting, value)
-    end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
-    check_admin_perm(inter)
-    GuildServer.maybe_start(inter.guild_id)
-    ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+    if check_admin_perm(inter) do
+      GuildServer.maybe_start(inter.guild_id)
+      ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
 
-    setting = :erlang.binary_to_existing_atom(setting, :utf8)
-    value = case setting do
-      :autogen_rate -> :erlang.binary_to_integer(value)
+      setting = :erlang.binary_to_existing_atom(setting, :utf8)
+      value = case setting do
+        :autogen_rate -> :erlang.binary_to_integer(value)
+      end
+      case target do
+        "server" -> GuildServer.set(inter.guild_id, setting, value)
+        "channel" -> ChannelServer.set(inter.channel_id, setting, value)
+      end
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
+    else
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
-    case target do
-      "server" -> GuildServer.set(inter.guild_id, setting, value)
-      "channel" -> ChannelServer.set(inter.channel_id, setting, value)
-    end
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to `#{setting_prettify(value)}`**", flags: 64}})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings", options: [%{name: target}]}}=inter, _}) do
-    check_admin_perm(inter)
+    if check_admin_perm(inter) do
+      meta = case target do
+        "server" ->
+          GuildServer.maybe_start(inter.guild_id)
+          GuildServer.get_meta(inter.guild_id)
+        "channel" ->
+          ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
+          ChannelServer.get_meta(inter.channel_id)
+      end
 
-    meta = case target do
-      "server" ->
-        GuildServer.maybe_start(inter.guild_id)
-        GuildServer.get_meta(inter.guild_id)
-      "channel" ->
-        ChannelServer.maybe_start({inter.channel_id, inter.guild_id})
-        ChannelServer.get_meta(inter.channel_id)
+      embed = %Struct.Embed{}
+          |> put_title("Deuterium #{target} settings")
+          |> put_color(0xe6f916)
+      embed = Enum.reduce(Enum.concat(binary_settings(), non_binary_settings()), embed, fn elm, acc ->
+        acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
+      end)
+
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    else
+      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
-
-    embed = %Struct.Embed{}
-        |> put_title("Deuterium #{target} settings")
-        |> put_color(0xe6f916)
-    embed = Enum.reduce(Enum.concat(binary_settings(), non_binary_settings()), embed, fn elm, acc ->
-      acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
-    end)
-
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -588,6 +599,7 @@ defmodule Deutexrium do
   defp check_admin_perm(inter) do
     guild = Nostrum.Cache.GuildCache.get!(inter.guild_id)
     perms = Nostrum.Struct.Guild.Member.guild_permissions(inter.member, guild)
+    IO.inspect(perms)
     :administrator in perms
   end
 end
