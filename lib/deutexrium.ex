@@ -299,7 +299,7 @@ defmodule Deutexrium do
         |> put_title("Deuterium setting help")
         |> put_color(0xe6f916)
         |> put_field(name, desc)
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -316,7 +316,7 @@ defmodule Deutexrium do
       text = 1..count
           |> Enum.map(fn _ -> ChannelServer.generate({inter.channel_id, inter.guild_id}) end)
           |> Enum.join("\n")
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
     end
   end
 
@@ -326,7 +326,7 @@ defmodule Deutexrium do
     unless inter_notice(inter) do
       channel = :erlang.binary_to_integer(channel)
       text = ChannelServer.generate({channel, inter.guild_id})
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
     end
   end
 
@@ -334,7 +334,7 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
     text = ChannelServer.generate({0, 0})
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
@@ -368,7 +368,7 @@ defmodule Deutexrium do
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}}=inter, _}) do
@@ -379,7 +379,7 @@ defmodule Deutexrium do
         |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
         |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}}=inter, _}) do
@@ -421,7 +421,7 @@ defmodule Deutexrium do
            I do not disclose collected data to anyone. Furthermore, I do not look at it myself.
            """)
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}}=inter, _}) do
@@ -431,7 +431,7 @@ defmodule Deutexrium do
         |> put_field(":eye: Support server", "https://discord.gg/N52uWgD")
         |> put_field(":e_mail: Email", "`portasynthinca3 (at) gmail.com`")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -449,7 +449,7 @@ defmodule Deutexrium do
           |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
           |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
     end
   end
 
@@ -464,7 +464,7 @@ defmodule Deutexrium do
         |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
         |> put_field("Channels in memory", "`#{ChannelServer.cnt()}`")
 
-    {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
@@ -479,7 +479,7 @@ defmodule Deutexrium do
         {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
       end)
 
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
     end
   end
 
@@ -495,9 +495,9 @@ defmodule Deutexrium do
         target == "channel" and property == "model" ->
           :ok = ChannelServer.reset({inter.channel_id, inter.guild_id}, :model)
       end
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
     else
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
   end
 
@@ -515,9 +515,9 @@ defmodule Deutexrium do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
         "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
       end
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
   end
 
@@ -533,9 +533,9 @@ defmodule Deutexrium do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
         "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
       end
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
   end
 
@@ -557,9 +557,9 @@ defmodule Deutexrium do
         acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
       end)
 
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
     else
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
   end
 
@@ -588,7 +588,7 @@ defmodule Deutexrium do
     invalid = inter.guild_id == nil
     if invalid do
       Logger.warn("interaction in #{inter.channel_id} has guild_id=nil")
-      {:ok} = Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I don't have slash command permissions. Please kick me and re-authorize using this link: https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I don't have slash command permissions. Please kick me and re-authorize using this link: https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands**", flags: 64}})
       true
     else
       false
