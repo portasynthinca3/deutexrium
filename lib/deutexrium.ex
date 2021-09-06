@@ -259,6 +259,13 @@ defmodule Deutexrium do
     Api.update_status("", "#{guild_cnt} servers and #{chan_cnt} channels", 2)
   end
 
+  def presence_updater do
+    update_presence()
+    receive do after 60 * 1000 ->
+      presence_updater()
+    end
+  end
+
 
 
   def start_link do
@@ -268,8 +275,7 @@ defmodule Deutexrium do
   end
 
   def handle_event({:READY, _, _}) do
-    :timer.apply_interval(15 * 60 * 1000, __MODULE__, :update_presence, [])
-    :timer.apply_after(10000, __MODULE__, :update_presence, [])
+    spawn(&presence_updater/0)
     # add_slash_commands()
     Logger.info("ready")
   end
