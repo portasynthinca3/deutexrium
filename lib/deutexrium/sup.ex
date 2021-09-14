@@ -13,7 +13,11 @@ defmodule Deutexrium.Sup do
 
   @impl true
   def init(_init_arg) do
-    children = [Deutexrium]
+    children = [
+      Deutexrium,
+      Deutexrium.Server.Supervisor,
+      Deutexrium.RingStarter
+    ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end

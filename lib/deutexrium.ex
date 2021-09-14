@@ -4,7 +4,7 @@ defmodule Deutexrium do
   alias Nostrum.Api
   alias Nostrum.Struct
   import Nostrum.Struct.Embed
-  alias Deutexrium.{ChannelServer, GuildServer}
+  alias Deutexrium.Server
 
   def binary_settings do
     [
@@ -329,11 +329,11 @@ defmodule Deutexrium do
         Api.create_message(msg.channel_id, content: """
         channel metadata
         ```elixir
-        #{inspect(ChannelServer.get_meta({msg.channel_id, msg.guild_id}))}
+        #{inspect Server.Channel.get_meta({msg.channel_id, msg.guild_id})}
         ```
         guild metadata
         ```elixir
-        #{inspect(GuildServer.get_meta(msg.guild_id))}
+        #{inspect Server.Guild.get_meta(msg.guild_id)}
         ```
         """)
       end
@@ -342,12 +342,12 @@ defmodule Deutexrium do
       bot_id = Nostrum.Cache.Me.get().id
       possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
       if String.contains?(msg.content, possible_mentions) do
-        text = ChannelServer.generate({msg.channel_id, msg.guild_id})
+        text = Server.Channel.generate({msg.channel_id, msg.guild_id})
         simulate_typing(text, msg.channel_id)
         Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
       else
         # only train if it doesn't contain bot mentions
-        case ChannelServer.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
+        case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
           :ok -> :ok
           {:message, text} ->
             simulate_typing(text, msg.channel_id)
@@ -381,12 +381,12 @@ defmodule Deutexrium do
         1
       else
         [%{name: "count", value: val}] = inter.data.options
-        if val in 1..ChannelServer.get(id, :max_gen_len) do val else 0 end
+        if val in 1..Server.Channel.get(id, :max_gen_len) do val else 0 end
       end
 
       unless count == 0 do
         text = 1..count
-            |> Enum.map(fn _ -> ChannelServer.generate(id) end)
+            |> Enum.map(fn _ -> Server.Channel.generate(id) end)
             |> Enum.join("\n")
         Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
       else
@@ -400,7 +400,7 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
     unless inter_notice(inter) do
       channel = :erlang.binary_to_integer(channel)
-      text = ChannelServer.generate({channel, inter.guild_id})
+      text = Server.Channel.generate({channel, inter.guild_id})
       Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
     end
   end
@@ -408,7 +408,7 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
-    text = ChannelServer.generate({0, 0})
+    text = Server.Channel.generate({0, 0})
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
@@ -515,8 +515,8 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
     unless inter_notice(inter) do
-      chan_model = ChannelServer.get_model_stats({inter.channel_id, inter.guild_id})
-      global_model = ChannelServer.get_model_stats({0, 0})
+      chan_model = Server.Channel.get_model_stats({inter.channel_id, inter.guild_id})
+      global_model = Server.Channel.get_model_stats({0, 0})
 
       embed = %Struct.Embed{}
           |> put_title("Deuterium status")
@@ -539,7 +539,6 @@ defmodule Deutexrium do
         |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024)} KiB`")
         |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
         |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
-        |> put_field("Channels in memory", "`#{ChannelServer.cnt()}`")
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
@@ -548,7 +547,7 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
     unless inter_notice(inter) do
-      %{user_stats: scoreboard} = GuildServer.get_meta(inter.guild_id)
+      %{user_stats: scoreboard} = Server.Guild.get_meta(inter.guild_id)
 
       embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
       top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
@@ -566,11 +565,11 @@ defmodule Deutexrium do
     if check_admin_perm(inter) do
       cond do
         target == "server" and property == "settings" ->
-          :ok = GuildServer.reset(inter.guild_id, :settings)
+          :ok = Server.Guild.reset(inter.guild_id, :settings)
         target == "channel" and property == "settings" ->
-          :ok = ChannelServer.reset({inter.channel_id, inter.guild_id}, :settings)
+          :ok = Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
         target == "channel" and property == "model" ->
-          :ok = ChannelServer.reset({inter.channel_id, inter.guild_id}, :model)
+          :ok = Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
     else
@@ -589,8 +588,8 @@ defmodule Deutexrium do
         "nil" -> nil
       end
       case target do
-        "server" -> GuildServer.set(inter.guild_id, setting, value)
-        "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
+        "server" -> Server.Guild.set(inter.guild_id, setting, value)
+        "channel" -> Server.Channel.set({inter.channel_id, inter.guild_id}, setting, value)
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
@@ -611,8 +610,8 @@ defmodule Deutexrium do
           rescue _ -> 0 end
       end
       case target do
-        "server" -> GuildServer.set(inter.guild_id, setting, value)
-        "channel" -> ChannelServer.set({inter.channel_id, inter.guild_id}, setting, value)
+        "server" -> Server.Guild.set(inter.guild_id, setting, value)
+        "channel" -> Server.Channel.set({inter.channel_id, inter.guild_id}, setting, value)
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
@@ -626,9 +625,9 @@ defmodule Deutexrium do
     if check_admin_perm(inter) do
       meta = case target do
         "server" ->
-          GuildServer.get_meta(inter.guild_id)
+          Server.Guild.get_meta(inter.guild_id)
         "channel" ->
-          ChannelServer.get_meta({inter.channel_id, inter.guild_id})
+          Server.Channel.get_meta({inter.channel_id, inter.guild_id})
       end
 
       embed = %Struct.Embed{}
@@ -652,7 +651,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Search results")
           |> put_color(0xe6f916)
-      embed = ChannelServer.token_stats({inter.channel_id, inter.guild_id})
+      embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
           |> Enum.filter(fn
             {k, _} when is_atom(k) -> false
             {k, _} ->
@@ -673,7 +672,7 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "forget", options: [%{name: "word", value: word}]}}=inter, _}) do
     if check_admin_perm(inter) do
-      ChannelServer.forget({inter.channel_id, inter.guild_id}, word)
+      Server.Channel.forget({inter.channel_id, inter.guild_id}, word)
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **i forgor `#{word}` :skull:**", flags: 64}})
     else
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})

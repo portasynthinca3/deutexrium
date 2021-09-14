@@ -1,7 +1,8 @@
-defmodule Deutexrium.GuildServer do
+defmodule Deutexrium.Server.Guild do
   use GenServer
   require Logger
   alias Deutexrium.Persistence.GuildMeta
+  alias Deutexrium.Server.RqRouter
 
   @impl true
   def init(id) do
@@ -64,7 +65,6 @@ defmodule Deutexrium.GuildServer do
 
     # exit
     if do_exit do
-      :ets.delete(:guild_servers, id)
       exit(:normal)
     end
   end
@@ -81,48 +81,23 @@ defmodule Deutexrium.GuildServer do
 
 
 
-  def start(id) when is_integer(id) do
-    {:ok, pid} = GenServer.start(__MODULE__, id)
-    :ets.insert(:guild_servers, {id, pid})
-    pid
-  end
-
-  def maybe_start(id) when is_integer(id) do
-    case get_pid(id) do
-      :nopid -> start(id)
-      pid -> pid
-    end
-  end
-
-  def get_pid(id) when is_integer(id) do
-    case :ets.lookup(:guild_servers, id) do
-      [{_, pid}] -> pid
-      [] -> :nopid
-    end
-  end
-
   @spec get_meta(integer()) :: %GuildMeta{}
   def get_meta(id) when is_integer(id) do
-    get_pid(id) |> GenServer.call(:get_meta)
+    id |> RqRouter.route_to_guild(:get_meta)
   end
 
   @spec reset(integer(), atom()) :: :ok
   def reset(id, what) when is_integer(id) and is_atom(what) do
-    get_pid(id) |> GenServer.call({:reset, what})
+    id |> RqRouter.route_to_guild({:reset, what})
   end
 
   @spec scoreboard_add_one(integer(), integer()) :: :ok
   def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author) do
-    get_pid(id) |> GenServer.call({:scoreboard, author})
+    id |> RqRouter.route_to_guild({:scoreboard, author})
   end
 
   @spec set(integer(), atom(), any()) :: :ok
   def set(id, setting, value) when is_integer(id) and is_atom(setting) do
-    get_pid(id) |> GenServer.call({:set, setting, value})
-  end
-
-  @spec shutdown(integer(), boolean()) :: :ok
-  def shutdown(id, freeze) when is_integer(id) do
-    get_pid(id) |> GenServer.cast({:shutdown, freeze})
+    id |> RqRouter.route_to_guild({:set, setting, value})
   end
 end

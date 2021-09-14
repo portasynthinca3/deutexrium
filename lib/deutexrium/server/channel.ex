@@ -1,12 +1,13 @@
-defmodule Deutexrium.ChannelServer do
+defmodule Deutexrium.Server.Channel do
   use GenServer
   require Logger
   alias Deutexrium.Persistence.{Meta, Model}
-  alias Deutexrium.GuildServer
+  alias Deutexrium.Server
+  alias Server.RqRouter
 
   defp get_setting({{_, guild}, meta}, setting) do
     if Map.get(meta, setting) == nil do
-      GuildServer.get_meta(guild) |> Map.get(setting)
+      Server.Guild.get_meta(guild) |> Map.get(setting)
     else
       Map.get(meta, setting)
     end
@@ -82,7 +83,7 @@ defmodule Deutexrium.ChannelServer do
       end
 
       # scoreboard
-      GuildServer.scoreboard_add_one(guild, author_id)
+      Server.Guild.scoreboard_add_one(guild, author_id)
 
       {:reply, reply,
         {id, %{meta | total_msgs: meta.total_msgs + 1}, model, timeout}, timeout}
@@ -159,7 +160,6 @@ defmodule Deutexrium.ChannelServer do
 
     # exit
     if do_exit do
-      :ets.delete(:channel_servers, id)
       exit(:normal)
     end
   end
@@ -176,89 +176,50 @@ defmodule Deutexrium.ChannelServer do
 
 
 
-  def start({id, guild}=arg) when is_integer(id) and is_integer(guild) do
-    {:ok, pid} = GenServer.start(__MODULE__, arg)
-    :ets.insert(:channel_servers, {id, pid})
-    pid
-  end
-
-  def maybe_start({id, guild}=arg) when is_integer(id) and is_integer(guild) do
-    case get_pid(id) do
-      :nopid -> start(arg)
-      pid -> pid
-    end
-  end
-
-  def get_pid({id, gid}) when is_integer(id) and is_integer(gid) do
-    case :ets.lookup(:channel_servers, id) do
-      [{_, pid}] -> pid
-      [] ->
-        GuildServer.maybe_start(gid)
-        start({id, gid})
-    end
-  end
-  def get_pid(id) when is_integer(id) do
-    case :ets.lookup(:channel_servers, id) do
-      [{_, pid}] -> pid
-      [] ->
-        Logger.error("can't start non-existent channel-#{id} server because gid is unknown")
-        :nopid
-    end
-  end
-
-  def cnt do
-    length(:ets.match(:channel_servers, :_))
-  end
-
-  @type server_id() :: integer() | {integer(), integer()}
+  @type server_id() :: {integer(), integer()}
 
   @spec get_meta(server_id()) :: %Meta{}
   def get_meta(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:get_meta)
+    id |> RqRouter.route_to_chan(:get_meta)
   end
 
   @spec get_model_stats(server_id()) :: %Model{}
   def get_model_stats(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:get_model)
+    id |> RqRouter.route_to_chan(:get_model)
   end
 
   @spec handle_message(server_id(), String.t(), boolean(), integer()) :: :ok | {:message, String.t()}
   def handle_message(id, msg, by_bot, author_id) when (is_integer(id) or is_tuple(id)) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
-    get_pid(id) |> GenServer.call({:message, msg, by_bot, author_id})
+    id |> RqRouter.route_to_chan({:message, msg, by_bot, author_id})
   end
 
   @spec generate(server_id()) :: String.t()
   def generate(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:generate)
+    id |> RqRouter.route_to_chan(:generate)
   end
 
   @spec reset(server_id(), atom()) :: :ok
   def reset(id, what) when (is_integer(id) or is_tuple(id)) and is_atom(what) do
-    get_pid(id) |> GenServer.call({:reset, what})
+    id |> RqRouter.route_to_chan({:reset, what})
   end
 
   @spec set(server_id(), atom(), any()) :: :ok
   def set(id, setting, value) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
-    get_pid(id) |> GenServer.call({:set, setting, value})
+    id |> RqRouter.route_to_chan({:set, setting, value})
   end
 
   @spec get(server_id(), atom()) :: any()
   def get(id, setting) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
-    get_pid(id) |> GenServer.call({:get, setting})
+    id |> RqRouter.route_to_chan({:get, setting})
   end
 
   @spec token_stats(server_id()) :: String.t()
   def token_stats(id) when (is_integer(id) or is_tuple(id)) do
-    get_pid(id) |> GenServer.call(:token_stats)
+    id |> RqRouter.route_to_chan(:token_stats)
   end
 
   @spec get(server_id(), atom()) :: :ok
   def forget(id, token) when is_integer(id) or is_tuple(id) do
-    get_pid(id) |> GenServer.call({:forget, token})
-  end
-
-  @spec shutdown(server_id(), boolean()) :: :ok
-  def shutdown(id, freeze) when is_integer(id) or is_tuple(id) do
-    get_pid(id) |> GenServer.cast({:shutdown, freeze})
+    id |> RqRouter.route_to_chan({:forget, token})
   end
 end
