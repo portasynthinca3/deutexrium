@@ -174,10 +174,7 @@ defmodule Deutexrium.ChannelServer do
 
 
 
-  def boot do
-    :ets.new(:channel_servers, [:set, :named_table, :public])
-    Logger.debug("created channel_servers table")
-  end
+
 
   def start({id, guild}=arg) when is_integer(id) and is_integer(guild) do
     {:ok, pid} = GenServer.start(__MODULE__, arg)

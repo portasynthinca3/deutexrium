@@ -10,7 +10,8 @@ config :logger,
   level: :debug,
   backends: [:console, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
-  metadata: [:shard, :guild, :channel]
+  metadata: [:shard, :guild, :channel],
+  level: :debug
 config :logger, :debug_log,
   path: "deuterium.log",
   level: :debug

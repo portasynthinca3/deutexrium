@@ -292,8 +292,9 @@ defmodule Deutexrium do
   end
 
   def presence_updater do
-    update_presence()
+    # update presence every 60s
     receive do after 60 * 1000 ->
+      update_presence()
       presence_updater()
     end
   end
@@ -301,14 +302,11 @@ defmodule Deutexrium do
 
 
   def start_link do
-    GuildServer.boot()
-    ChannelServer.boot()
     Consumer.start_link(__MODULE__)
   end
 
   def handle_event({:READY, _, _}) do
     spawn(&presence_updater/0)
-    # add_slash_commands()
     Logger.info("ready")
   end
 
@@ -682,11 +680,11 @@ defmodule Deutexrium do
     end
   end
 
-
-
   def handle_event(_event) do
     :noop
   end
+
+
 
   defp setting_prettify(val) do
     case val do

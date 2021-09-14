@@ -1,23 +1,22 @@
-      +-> starts >----+--------------+--------------+
+      +---------------+--------------+--------------+
       |               |              |              |
       |               v              v              v
  +----------+ +-------------+ +-------------+ +-------------+
  | Nostrum  | | cmd handler | | cmd handler | | cmd handler |
  | Consumer | |      1      | |      2      | |      N      |
  +----------+ +-------------+ +-------------+ +-------------+
-      ^                ^             ^               ^
-      |                |             |               |
-      +--------------+ | +-----------+               |
-                     | | | +-------------------------+
-                     | | | |
+      ^
+      |
+      +-------------------+
+                          |
                     /------------\
                     |            |     ^^^ handling Discord events
                     |    MAIN    |
                     | SUPERVISOR |
                     |            |    vvv handling internal requests
                     \------------/
-                     |          |
-      +--------------+          +--------------+
+                       |      |
+      +----------------+      +----------------+
       |                                        |
       v                                        v
  +---------+                         +-------------------+
@@ -60,14 +59,14 @@ OPERATION IN CASE OF A DISCORD EVENT
 4. ...so it sends its request, along with the ID of the guild or channel that should handle the request, to the request router
 5. The request router receives the request and:
 5.1. a) forwards it to an existing server if one exists
-5.2. b) starts a new server and forwards the request to it
+5.2. b) otherwise starts a new server and forwards the request to it
 
 
 OPERATION IN CASE OF A GUILD/CHANNEL SERVER FAILURE
 1. Their supervisor just ignores the :DOWN event, but the request router's internal ID-to-process mapping is still pointing
    to the dead server
 2. When the router receives a request that's supposed to get executed on the dead server, an error is raised when trying
-   to send a message to that server by OTP. The router then just starts a new one and updates the internal mapping
+   to send a message to that server by OTP. The router then just starts a new one and updates its internal mapping
 
 
 OPERATION IN CASE OF AN EVENT HANDLING FAILURE

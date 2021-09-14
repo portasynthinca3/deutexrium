@@ -79,10 +79,7 @@ defmodule Deutexrium.GuildServer do
 
 
 
-  def boot do
-    :ets.new(:guild_servers, [:set, :named_table, :public])
-    Logger.debug("created guild_servers table")
-  end
+
 
   def start(id) when is_integer(id) do
     {:ok, pid} = GenServer.start(__MODULE__, id)
