@@ -6,7 +6,8 @@ defmodule Deutexrium.Persistence.GuildMeta do
     mood: 50,
     enable_actions: true,
     ignore_bots: true,
-    remove_mentions: false
+    remove_mentions: false,
+    max_gen_len: 10
 
   defp path(guild_id) do
     Application.fetch_env!(:deutexrium, :data_path)
@@ -14,10 +15,10 @@ defmodule Deutexrium.Persistence.GuildMeta do
   end
 
   def load!(guild_id) when is_integer(guild_id) do
-    path(guild_id)
+    %Deutexrium.Persistence.GuildMeta{} |> Map.merge(path(guild_id)
         |> File.read!
         |> :zlib.gunzip
-        |> :erlang.binary_to_term
+        |> :erlang.binary_to_term)
   end
 
   def dump!(guild_id, %Deutexrium.Persistence.GuildMeta{}=data) when is_integer(guild_id) do

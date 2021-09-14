@@ -39,7 +39,7 @@ defmodule Deutexrium.GuildServer do
 
   @impl true
   def handle_call({:scoreboard, author}, _from, {id, meta, timeout}) do
-    {:reply, :ok, {id, %{meta | user_stats: Map.put(meta.user_stats, author, Map.get(meta.user_stats, author) || 0 + 1)}, timeout}, timeout}
+    {:reply, :ok, {id, %{meta | user_stats: Map.put(meta.user_stats, author, (Map.get(meta.user_stats, author) || 0) + 1)}, timeout}, timeout}
   end
 
   @impl true

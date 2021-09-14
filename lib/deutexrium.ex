@@ -27,11 +27,14 @@ defmodule Deutexrium do
     [
       %{value: "autogen_rate",
         name: "automatic generation rate",
-        description: "automatic message generation rate (one per <value> others' messages); disabled if set to 0"}
+        description: "automatic message generation rate (one per <value> others' messages); disabled if set to 0"},
+      %{value: "max_gen_len",
+        name: "maximum /gen option value",
+        description: "maximum number of messages to generate by one batch using the /gen command"}
     ]
   end
 
-  def add_slash_commands do
+  def add_slash_commands(guild \\ 0) do
     commands = []
 
     commands = [%{
@@ -117,12 +120,38 @@ defmodule Deutexrium do
 
     commands = [%{
       name: "gen_from",
-      description: "generate messages using the specified channel's model immediately",
+      description: "generate a message using the specified channel's model immediately",
       options: [
         %{
           type: 7, # channel
           name: "channel",
           description: "the channel to use",
+          required: true
+        }
+      ]
+    } | commands]
+
+    commands = [%{
+      name: "search",
+      description: "search for a word in the model",
+      options: [
+        %{
+          type: 3, # string
+          name: "word",
+          description: "the word to search for",
+          required: true
+        }
+      ]
+    } | commands]
+
+    commands = [%{
+      name: "forget",
+      description: "forget a word",
+      options: [
+        %{
+          type: 3, #wordstring
+          name: "word",
+          description: "the exact word to forget",
           required: true
         }
       ]
@@ -248,8 +277,11 @@ defmodule Deutexrium do
       ]
     } | commands]
 
-    # {:ok, _} = Api.bulk_overwrite_guild_application_commands(765604415427575828, commands)
-    {:ok, _} = Api.bulk_overwrite_global_application_commands(commands)
+    {:ok, _} = if guild == 0 do
+      Api.bulk_overwrite_global_application_commands(commands)
+    else
+      Api.bulk_overwrite_guild_application_commands(guild, commands)
+    end
   end
 
   def update_presence do
@@ -286,7 +318,7 @@ defmodule Deutexrium do
     unless msg.guild_id == nil or msg.channel_id == nil do
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
-        {:ok, _} = Api.create_message(msg.channel_id, content: """
+        Api.create_message(msg.channel_id, content: """
         :sparkles: **I am now using slash commands! Try `/help`** :sparkles:
         If /help doesn't work, please kick me and re-authorize using this link:
         https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands
@@ -294,10 +326,35 @@ defmodule Deutexrium do
         """)
       end
 
-      case ChannelServer.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
-        :ok -> :ok
-        {:message, to_send} ->
-          Api.create_message(msg.channel_id, to_send)
+      # print metadata
+      if msg.content == "deut_debug" and msg.author.id in Application.fetch_env!(:deutexrium, :debug_people) do
+        Api.create_message(msg.channel_id, content: """
+        channel metadata
+        ```elixir
+        #{inspect(ChannelServer.get_meta({msg.channel_id, msg.guild_id}))}
+        ```
+        guild metadata
+        ```elixir
+        #{inspect(GuildServer.get_meta(msg.guild_id))}
+        ```
+        """)
+      end
+
+      # react to mentions
+      bot_id = Nostrum.Cache.Me.get().id
+      possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
+      if String.contains?(msg.content, possible_mentions) do
+        text = ChannelServer.generate({msg.channel_id, msg.guild_id})
+        simulate_typing(text, msg.channel_id)
+        Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
+      else
+        # only train if it doesn't contain bot mentions
+        case ChannelServer.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
+          :ok -> :ok
+          {:message, text} ->
+            simulate_typing(text, msg.channel_id)
+            Api.create_message(msg.channel_id, text)
+        end
       end
     end
   end
@@ -321,17 +378,22 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
     unless inter_notice(inter) do
+      id = {inter.channel_id, inter.guild_id}
       count = unless Map.has_key?(inter.data, :options) do
         1
       else
         [%{name: "count", value: val}] = inter.data.options
-        val
+        if val in 1..ChannelServer.get(id, :max_gen_len) do val else 0 end
       end
 
-      text = 1..count
-          |> Enum.map(fn _ -> ChannelServer.generate({inter.channel_id, inter.guild_id}) end)
-          |> Enum.join("\n")
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+      unless count == 0 do
+        text = 1..count
+            |> Enum.map(fn _ -> ChannelServer.generate(id) end)
+            |> Enum.join("\n")
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+      else
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**", flags: 64}})
+      end
     end
   end
 
@@ -382,6 +444,8 @@ defmodule Deutexrium do
         |> put_field("reset server settings", ":rotating_light: reset server settings", true)
         |> put_field("reset channel settings", ":rotating_light: reset channel settings", true)
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
+        |> put_field("search <word>", ":mag: search for a word in the model", true)
+        |> put_field("forget <word>", ":skull: forget a specific word", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
@@ -464,7 +528,7 @@ defmodule Deutexrium do
           |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
           |> put_field(":1234: Total messages in the global model", global_model.trained_on)
 
-      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
     end
   end
 
@@ -542,7 +606,11 @@ defmodule Deutexrium do
     if check_admin_perm(inter) do
       setting = :erlang.binary_to_existing_atom(setting, :utf8)
       value = case setting do
-        :autogen_rate -> :erlang.binary_to_integer(value)
+        # parse numeric values
+        numeric when numeric in [:autogen_rate, :max_gen_len] ->
+          try do
+            :erlang.binary_to_integer(value)
+          rescue _ -> 0 end
       end
       case target do
         "server" -> GuildServer.set(inter.guild_id, setting, value)
@@ -580,6 +648,42 @@ defmodule Deutexrium do
 
 
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "search", options: [%{name: "word", value: word}]}}=inter, _}) do
+    word = word |> String.downcase
+    if check_admin_perm(inter) do
+      embed = %Struct.Embed{}
+          |> put_title("Search results")
+          |> put_color(0xe6f916)
+      embed = ChannelServer.token_stats({inter.channel_id, inter.guild_id})
+          |> Enum.filter(fn
+            {k, _} when is_atom(k) -> false
+            {k, _} ->
+              k |> String.downcase |> String.contains?(word)
+            end)
+          |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
+          |> Enum.reduce(embed, fn {k, v}, acc ->
+        acc |> put_field("`#{k}`", "#{v} occurences", true)
+      end)
+
+      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    else
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+    end
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "forget", options: [%{name: "word", value: word}]}}=inter, _}) do
+    if check_admin_perm(inter) do
+      ChannelServer.forget({inter.channel_id, inter.guild_id}, word)
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **i forgor `#{word}` :skull:**", flags: 64}})
+    else
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+    end
+  end
+
+
+
   def handle_event(_event) do
     :noop
   end
@@ -608,5 +712,12 @@ defmodule Deutexrium do
     else
       false
     end
+  end
+
+  defp simulate_typing(text, channel) do
+    words = text |> String.split() |> length()
+    delay = floor(words * ((40 + (10 * :rand.normal())) / 60) * 1000) # 40 +/-10 wpm
+    Api.start_typing(channel)
+    :timer.sleep(delay)
   end
 end

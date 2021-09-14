@@ -73,16 +73,12 @@ defmodule Deutexrium.ChannelServer do
 
       # auto-generation
       autorate = get_setting({id, meta}, :autogen_rate)
-      {reply, meta} = cond do
-        (autorate > 0) and (meta.total_msgs >= meta.next_gen_milestone) ->
+      reply = cond do
+        (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
           Logger.info("channel-#{cid} server: automatic generation")
-          reply = {:message, Markov.generate_text(model.data)}
-          # set new milestone
-          {reply, %{meta | next_gen_milestone: meta.next_gen_milestone +
-              autorate +
-              :rand.uniform(autorate) - div(autorate, 2)}}
+          {:message, Markov.generate_text(model.data)}
 
-        true -> {:ok, meta}
+        true -> :ok
       end
 
       # scoreboard
@@ -97,8 +93,15 @@ defmodule Deutexrium.ChannelServer do
 
   @impl true
   def handle_call(:generate, _from, {{cid, _}, _, model, timeout}=state) do
+    text = Markov.generate_text(model.data)
+
+    # remove mentions in global model
+    text = if cid == 0 do
+      Regex.replace(~r/<@!{0,1}[0-9]*>/, text, "**[mention removed]**")
+    else text end
+
     Logger.info("channel-#{cid} server: generating on demand")
-    {:reply, Markov.generate_text(model.data), state, timeout}
+    {:reply, text, state, timeout}
   end
 
   @impl true
@@ -116,6 +119,21 @@ defmodule Deutexrium.ChannelServer do
   def handle_call({:set, setting, val}, _from, {{cid, _}=id, meta, model, timeout}) do
     Logger.info("channel-#{cid} server: settings changed")
     {:reply, :ok, {id, Map.put(meta, setting, val), model, timeout}, timeout}
+  end
+
+  @impl true
+  def handle_call({:get, setting}, _from, {id, meta, _, timeout}=state) do
+    {:reply, get_setting({id, meta}, setting), state, timeout}
+  end
+
+  @impl true
+  def handle_call(:token_stats, _from, {_, _, model, timeout}=state) do
+    {:reply, MarkovTool.token_stats(model.data), state, timeout}
+  end
+
+  @impl true
+  def handle_call({:forget, token}, _from, {id, meta, model, timeout}) do
+    {:reply, :ok, {id, meta, %{model | data: MarkovTool.forget_token(model.data, token)}, timeout}, timeout}
   end
 
   @impl true
@@ -227,8 +245,23 @@ defmodule Deutexrium.ChannelServer do
     get_pid(id) |> GenServer.call({:set, setting, value})
   end
 
+  @spec get(server_id(), atom()) :: any()
+  def get(id, setting) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
+    get_pid(id) |> GenServer.call({:get, setting})
+  end
+
+  @spec token_stats(server_id()) :: String.t()
+  def token_stats(id) when (is_integer(id) or is_tuple(id)) do
+    get_pid(id) |> GenServer.call(:token_stats)
+  end
+
+  @spec get(server_id(), atom()) :: :ok
+  def forget(id, token) when is_integer(id) or is_tuple(id) do
+    get_pid(id) |> GenServer.call({:forget, token})
+  end
+
   @spec shutdown(server_id(), boolean()) :: :ok
-  def shutdown(id, freeze) when (is_integer(id) or is_tuple(id)) do
+  def shutdown(id, freeze) when is_integer(id) or is_tuple(id) do
     get_pid(id) |> GenServer.cast({:shutdown, freeze})
   end
 end

@@ -6,7 +6,8 @@ defmodule Deutexrium.Persistence.Meta do
     next_gen_milestone: 20,
     enable_actions: nil,
     ignore_bots: nil,
-    remove_mentions: nil
+    remove_mentions: nil,
+    max_gen_len: nil
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)
@@ -14,10 +15,10 @@ defmodule Deutexrium.Persistence.Meta do
   end
 
   def load!(channel_id) when is_integer(channel_id) do
-    path(channel_id)
+    %Deutexrium.Persistence.Meta{} |> Map.merge(path(channel_id)
         |> File.read!
         |> :zlib.gunzip
-        |> :erlang.binary_to_term
+        |> :erlang.binary_to_term)
   end
 
   def dump!(channel_id, %Deutexrium.Persistence.Meta{}=data) when is_integer(channel_id) do
