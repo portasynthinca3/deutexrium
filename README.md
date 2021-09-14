@@ -20,3 +20,6 @@ Something like `DEUTEX_TOKEN=... iex -S mix`
 
 ### Usage notice
 If you integrate this bot's functionality into your own bot, or even just straight up copy it, you must credit me (portasynthinca3) as the creator of the original software. You may not change or remove the link mentioned in the response of `/donate`, however you might add your own.
+
+## Modification
+If you're familiar with Elixir and OTP, take a look inside `/supervision_tree.txt` to learn more about its internal structure

@@ -2,7 +2,7 @@
       |               |              |              |
       |               v              v              v
  +----------+ +-------------+ +-------------+ +-------------+   <| created and terminated
- | Nostrum  | | cmd handler | | cmd handler | | cmd handler |   <| dynamically
+ | Nostrum  | | cmd handler | | cmd handler | | cmd handler |   <| dynamically by Nostrum
  | Consumer | |      1      | |      2      | |      N      |   <| 
  +----------+ +-------------+ +-------------+ +-------------+   <| 
       ^
@@ -51,28 +51,25 @@
 
 
 STARTUP
-1. Main supervisor starts the Nostrum event Consumer, the guild and channel server DynamicSupervisor and the request router
+1. Main supervisor starts three things:
+   a) a dynamic router supervisor
+   b) the consistent hash ring
+   c) a Nostrum event consumer
 
 
 OPERATION IN CASE OF A DISCORD EVENT
 2. Nostrum starts a Task to handle the event
 3. The event handler may need to issue an internal request to one of the guild or channel servers
-4. ...so it sends its request, along with the ID of the guild or channel that should handle the request, to the request router
-5. The request router receives the request and:
-5.1. a) forwards it to an existing server if one exists
-5.2. b) otherwise starts a new server and forwards the request to it
+4. ...so it sends its request, along with the ID of the guild or channel that should handle the request, to
+   one of the request routers as determined by a consistent hashing algorithm based on the target server
+   type and ID
+5. The router receives the request and either:
+   a) forwards it to an existing server if one exists
+   b) otherwise starts a new server and forwards the request to it
 
 
 OPERATION IN CASE OF A GUILD/CHANNEL SERVER FAILURE
-1. Their supervisor just ignores the :DOWN event, but the request router's internal ID-to-process mapping is still pointing
-   to the dead server
-2. When the router receives a request that's supposed to get executed on the dead server, an error is raised when trying
+1. They're not supervised by anybody and so nobody notices their death, but the responsible router's internal
+   ID-to-process mapping is still pointing to the dead server
+2. When a router receives a request that's supposed to get executed on the dead server, an EXIT is signaled when trying
    to send a message to that server by OTP. The router then just starts a new one and updates its internal mapping
-
-
-OPERATION IN CASE OF AN EVENT HANDLING FAILURE
-1. Nostrum attempts to handle the even four more times before giving up. Nothing else crashes
-
-
-OPERATION IN CASE OF A REQUEST ROUTER, G/C SERVER SUPERVISOR OR A NOSTRUM CONSUMER FAILURE
-1. The main supervisor simply restarts it
