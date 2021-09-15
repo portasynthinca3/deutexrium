@@ -5,11 +5,11 @@ config :deutexrium,
   channel_unload_timeout: 3 * 60 * 1000, # milliseconds
   guild_unload_timeout: 10 * 60 * 1000,
   debug_people: [471715557096554518], # ids of people that can run "deut_debug"
-  default_router_cnt: 32
+  default_router_cnt: 4
 
 config :logger,
   level: :debug,
-  backends: [:console, {LoggerFileBackend, :debug_log}]
+  backends: [{:console, :debug_warn}, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel],
   level: :debug

@@ -133,7 +133,8 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call({:forget, token}, _from, {id, meta, model, timeout}) do
+  def handle_call({:forget, token}, _from, {{cid, _}=id, meta, model, timeout}) do
+    Logger.info("channel-#{cid} server: forgetting token")
     {:reply, :ok, {id, meta, %{model | data: MarkovTool.forget_token(model.data, token)}, timeout}, timeout}
   end
 

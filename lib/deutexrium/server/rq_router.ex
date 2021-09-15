@@ -3,12 +3,13 @@ defmodule Deutexrium.Server.RqRouter do
   require Logger
   alias ExHashRing.Ring
   alias Deutexrium.Server
+  alias Deutexrium.Server.RqRouter.State
 
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg)
   end
 
-  defp try_calling(map, {type, id}=target, rq) do
+  defp forward_request(map, {type, id}=target, rq) do
     module = case type do
       :guild -> Server.Guild
       :channel -> Server.Channel
@@ -19,18 +20,20 @@ defmodule Deutexrium.Server.RqRouter do
         Logger.debug("starting server for target #{inspect target}")
         {:ok, pid} = GenServer.start(module, id)
         map = map |> Map.put(id, pid)
-        try_calling(map, target, rq)
+        forward_request(map, target, rq)
 
       pid when is_pid(pid) ->
         try do
-          result = GenServer.call(pid, rq, 4500)
-          {map, result}
+          ref = make_ref()
+          Logger.debug("forwarding request to #{inspect target}")
+          pid |> send({:"$gen_call", {self(), ref}, rq})
+          {map, ref}
         catch
           :exit, _ ->
             Logger.warn("restarting server for target #{inspect target}")
             # kill it just in case
             Process.exit(pid, :normal)
-            try_calling(map |> Map.delete(id), target, rq)
+            forward_request(map |> Map.delete(id), target, rq)
         end
     end
   end
@@ -46,27 +49,42 @@ defmodule Deutexrium.Server.RqRouter do
 
   @impl true
   def init(_) do
-    {:ok, {%{}, %{}}}
+    {:ok, %State{}}
   end
 
   @impl true
-  def handle_call({:route, {:guild, _}=target, rq}, _from, {%{}=guild_map, chan_map}) do
-    {guild_map, result} = try_calling(guild_map, target, rq)
-    {:reply, result, {guild_map, chan_map}}
+  def handle_call({:route, {:guild, _}=target, rq}, from, %State{}=state) do
+    {guild_pids, ref} = forward_request(state.guild_pids, target, rq)
+    {:noreply, %{state |
+      guild_pids: guild_pids,
+      ref_receivers: state.ref_receivers |> Map.put(ref, from)
+    }}
   end
 
   @impl true
-  def handle_call({:route, {:channel, _}=target, rq}, _from, {guild_map, %{}=chan_map}) do
-    {chan_map, result} = try_calling(chan_map, target, rq)
-    {:reply, result, {guild_map, chan_map}}
+  def handle_call({:route, {:channel, _}=target, rq}, from, %State{}=state) do
+    {channel_pids, ref} = forward_request(state.channel_pids, target, rq)
+    {:noreply, %{state |
+      channel_pids: channel_pids,
+      ref_receivers: state.ref_receivers |> Map.put(ref, from)
+    }}
   end
 
   @impl true
-  def handle_call(:server_count, _from, {%{}=guild_map, %{}=chan_map}=state) do
+  def handle_call(:server_count, _from, %State{}=state) do
     {:reply, %{
-      guilds: map_size(guild_map),
-      channels: map_size(chan_map)
+      guilds: map_size(state.guild_pids),
+      channels: map_size(state.channel_pids)
     }, state}
+  end
+
+  @impl true
+  def handle_info({ref, response}, %State{}=state) when is_reference(ref) do
+    %{^ref => {receiver, response_ref}} = state.ref_receivers
+    send(receiver, {response_ref, response})
+    {:noreply, %{state |
+      ref_receivers: state.ref_receivers |> Map.delete(ref)
+    }}
   end
 
   # ==== API =====
