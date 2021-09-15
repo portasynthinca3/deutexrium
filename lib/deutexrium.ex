@@ -548,6 +548,7 @@ defmodule Deutexrium do
         |> put_field("Internal request routers", "#{Server.Supervisor.router_cnt}", true)
         |> put_field("Internal guild servers", "#{guild_server_cnt}", true)
         |> put_field("Internal channel servers", "#{chan_server_cnt}", true)
+        |> put_field("Total internal processes", "#{Process.list |> length()}", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
