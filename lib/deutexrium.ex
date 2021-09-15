@@ -533,12 +533,21 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}}=inter, _}) do
+    used_space = Deutexrium.Persistence.used_space() |> div(1024)
+    used_memory = :erlang.memory(:total) |> div(1024 * 1024)
+    %{guilds: guild_server_cnt, channels: chan_server_cnt} = Server.Supervisor.server_count
+
     embed = %Struct.Embed{}
         |> put_title("Deuterium resource usage")
         |> put_color(0xe6f916)
-        |> put_field("Space taken up by user data", "`#{Deutexrium.Persistence.used_space() |> div(1024)} KiB`")
-        |> put_field("Number of known channels", "`#{Deutexrium.Persistence.channel_cnt()}`")
-        |> put_field("Number of known servers", "`#{Deutexrium.Persistence.guild_cnt()}`")
+
+        |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
+        |> put_field("Number of known channels", "#{Deutexrium.Persistence.channel_cnt}", true)
+        |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
+        |> put_field("Used RAM", "#{used_memory} MiB", true)
+        |> put_field("Internal request routers", "#{Server.Supervisor.router_cnt}", true)
+        |> put_field("Internal guild servers", "#{guild_server_cnt}", true)
+        |> put_field("Internal channel servers", "#{chan_server_cnt}", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end

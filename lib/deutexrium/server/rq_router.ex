@@ -61,11 +61,19 @@ defmodule Deutexrium.Server.RqRouter do
     {:reply, result, {guild_map, chan_map}}
   end
 
+  @impl true
+  def handle_call(:server_count, _from, {%{}=guild_map, %{}=chan_map}=state) do
+    {:reply, %{
+      guilds: map_size(guild_map),
+      channels: map_size(chan_map)
+    }, state}
+  end
+
   # ==== API =====
 
   @spec route({:channel|:guild, integer() | {integer(), integer()}}, any()) :: any()
   def route({type, _}=target, rq) when type == :channel or type == :guild do
-    router_pid(target) |> GenServer.call({:route, target, rq})
+    router_pid(target) |> GenServer.call({:route, target, rq}, 10000)
   end
 
   @spec route_to_guild(integer(), any()) :: any()
@@ -76,5 +84,10 @@ defmodule Deutexrium.Server.RqRouter do
   @spec route_to_chan({integer(), integer()}, any()) :: any()
   def route_to_chan({cid, gid}=id, rq) when is_integer(cid) and is_integer(gid) do
     route({:channel, id}, rq)
+  end
+
+  @spec server_count(pid()) :: %{guilds: integer(), channels: integer()}
+  def server_count(pid) do
+    pid |> GenServer.call(:server_count)
   end
 end
