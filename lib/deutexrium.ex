@@ -349,7 +349,7 @@ defmodule Deutexrium do
         # only train if it doesn't contain bot mentions
         case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
           :ok -> :ok
-          {:message, text} ->
+          {:message, {_, text}} ->
             simulate_typing(text, msg.channel_id)
             Api.create_message(msg.channel_id, text)
         end
@@ -522,9 +522,10 @@ defmodule Deutexrium do
           |> put_title("Deuterium status")
           |> put_color(0xe6f916)
 
-          |> put_field(":1234: Messages learned", chan_model.trained_on)
-          |> put_field(":1234: Messages contributed to the global model", chan_model.global_trained_on)
-          |> put_field(":1234: Total messages in the global model", global_model.trained_on)
+          |> put_field("Messages learned", chan_model.trained_on)
+          |> put_field("Messages contributed to the global model", chan_model.global_trained_on)
+          |> put_field("Total messages in the global model", global_model.trained_on)
+          |> put_field("Probability of generated message containing author information", :io_lib.format("~.2f%", [chan_model.likely_authored * 100]) |> to_string())
 
       Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
     end

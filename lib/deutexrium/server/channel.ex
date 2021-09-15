@@ -13,6 +13,36 @@ defmodule Deutexrium.Server.Channel do
     end
   end
 
+  # these two wrappers exist to allow keeping track of the author
+
+  defp generate_message(%Markov{}=model) do
+    tokens = model |> Markov.generate_tokens
+    {author, tokens} = case tokens do
+      [:from, id | rest] -> {id, rest}
+      _ -> {:noauthor, tokens}
+    end
+    {author, tokens |> Enum.join(" ")}
+  end
+
+  defp train_model(%Markov{}=model, text, author) do
+    model |> Markov.train([:from, author | text |> String.split])
+  end
+
+  defp likely_authored(%Markov{}=model) do
+    first_tokens = model.links |> Map.get([:start, :start])
+    contains_token = first_tokens |> Map.get(:from, 0)
+    other_sum = first_tokens |> Enum.reduce(0, fn {k, v}, acc ->
+      if k == :from do
+        acc
+      else
+        acc + v
+      end
+    end)
+    contains_token / (contains_token + other_sum)
+  end
+
+
+
   @impl true
   def init({id, guild}) do
     # load model and meta
@@ -45,7 +75,10 @@ defmodule Deutexrium.Server.Channel do
   end
   @impl true
   def handle_call(:get_model, _from, {_, _, model, timeout}=state) do
-    {:reply, Map.delete(model, :data), state, timeout}
+    {:reply,
+      Map.delete(model, :data) |>
+      Map.put(:likely_authored, likely_authored(model.data)),
+    state, timeout}
   end
 
   @impl true
@@ -59,7 +92,7 @@ defmodule Deutexrium.Server.Channel do
       # train local model
       model = if train do
         Logger.info("channel-#{cid} server: training local model")
-        %{model | data: Markov.train(model.data, message),
+        %{model | data: train_model(model.data, message, author_id),
           trained_on: model.trained_on + 1}
       else model
       end
@@ -77,7 +110,7 @@ defmodule Deutexrium.Server.Channel do
       reply = cond do
         (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
           Logger.info("channel-#{cid} server: automatic generation")
-          {:message, Markov.generate_text(model.data)}
+          {:message, {_,_}=generate_message(model.data)}
 
         true -> :ok
       end
@@ -94,7 +127,7 @@ defmodule Deutexrium.Server.Channel do
 
   @impl true
   def handle_call(:generate, _from, {{cid, _}, _, model, timeout}=state) do
-    text = Markov.generate_text(model.data)
+    {_, text} = generate_message(model.data)
 
     # remove mentions in global model
     text = if cid == 0 do
