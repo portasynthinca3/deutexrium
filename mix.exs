@@ -25,7 +25,8 @@ defmodule Deutexrium.MixProject do
       {:logger_file_backend, "~> 0.0"},
       {:markov, "~> 0.1"},
       {:ex_hash_ring, "~> 6.0"},
-      {:graceful_stop, "~> 0.2.0"}
+      {:graceful_stop, "~> 0.2.0"},
+      {:timex, "~> 3.0"}
     ]
   end
 end

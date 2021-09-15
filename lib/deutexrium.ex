@@ -536,12 +536,15 @@ defmodule Deutexrium do
     used_space = Deutexrium.Persistence.used_space() |> div(1024)
     used_memory = :erlang.memory(:total) |> div(1024 * 1024)
     %{guilds: guild_server_cnt, channels: chan_server_cnt} = Server.Supervisor.server_count
+    {uptime, _} = :erlang.statistics(:wall_clock)
+    uptime = uptime |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
 
     embed = %Struct.Embed{}
         |> put_title("Deuterium resource usage")
         |> put_color(0xe6f916)
 
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
+        |> put_field("Bot uptime", "#{uptime}", true)
         |> put_field("Number of known channels", "#{Deutexrium.Persistence.channel_cnt}", true)
         |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)

@@ -45,9 +45,14 @@ defmodule Deutexrium.Server.RqRouter do
     pid
   end
 
+  defp schedule_cleanup do
+    Process.send_after(self(), :cleanup, 60 * 1000)
+  end
+
 
   @impl true
   def init(_) do
+    schedule_cleanup()
     {:ok, %State{}}
   end
 
@@ -116,6 +121,16 @@ defmodule Deutexrium.Server.RqRouter do
     send(receiver, {response_ref, response})
     {:noreply, %{state |
       ref_receivers: state.ref_receivers |> Map.delete(ref)
+    }}
+  end
+
+  @impl true
+  def handle_info(:cleanup, %State{}=state) do
+    Logger.debug("router-#{inspect self()}: cleaning up")
+    schedule_cleanup()
+    {:noreply, %{state |
+      guild_pids: state.guild_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{}),
+      channel_pids: state.channel_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{})
     }}
   end
 

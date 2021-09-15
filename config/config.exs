@@ -15,7 +15,7 @@ config :logger, :console,
   level: :info
 config :logger, :debug_log,
   path: "deuterium.log",
-  level: :debug
+  level: :info
 
 config :nostrum,
   token: System.get_env("DEUTEX_TOKEN"),
