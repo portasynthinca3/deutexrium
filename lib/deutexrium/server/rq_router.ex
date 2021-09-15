@@ -53,7 +53,7 @@ defmodule Deutexrium.Server.RqRouter do
   end
 
   @impl true
-  def handle_call({:route, {:guild, _}=target, rq}, from, %State{}=state) do
+  def handle_call({:route, {:guild, _}=target, rq}, from, %State{}=state) when not state.shut_down do
     {guild_pids, ref} = forward_request(state.guild_pids, target, rq)
     {:noreply, %{state |
       guild_pids: guild_pids,
@@ -62,7 +62,7 @@ defmodule Deutexrium.Server.RqRouter do
   end
 
   @impl true
-  def handle_call({:route, {:channel, _}=target, rq}, from, %State{}=state) do
+  def handle_call({:route, {:channel, _}=target, rq}, from, %State{}=state) when not state.shut_down do
     {channel_pids, ref} = forward_request(state.channel_pids, target, rq)
     {:noreply, %{state |
       channel_pids: channel_pids,
@@ -76,6 +76,18 @@ defmodule Deutexrium.Server.RqRouter do
       guilds: map_size(state.guild_pids),
       channels: map_size(state.channel_pids)
     }, state}
+  end
+
+  @impl true
+  def handle_call(:shutdown, _from, %State{}=state) do
+    for {_, pid} <- Map.merge(state.guild_pids, state.channel_pids) do
+      pid |> GenServer.cast({:shutdown, false})
+    end
+    {:reply, :ok, %{state | shut_down: true}}
+  end
+
+  def handle_call(_, _, state) do
+    {:noreply, state}
   end
 
   @impl true
@@ -107,5 +119,10 @@ defmodule Deutexrium.Server.RqRouter do
   @spec server_count(pid()) :: %{guilds: integer(), channels: integer()}
   def server_count(pid) do
     pid |> GenServer.call(:server_count)
+  end
+
+  @spec shutdown(pid()) :: :ok
+  def shutdown(pid) do
+    pid |> GenServer.call(:shutdown)
   end
 end

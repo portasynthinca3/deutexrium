@@ -9,10 +9,10 @@ config :deutexrium,
 
 config :logger,
   level: :debug,
-  backends: [{:console, :debug_warn}, {LoggerFileBackend, :debug_log}]
+  backends: [:console, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel],
-  level: :debug
+  level: :info
 config :logger, :debug_log,
   path: "deuterium.log",
   level: :debug
@@ -23,3 +23,7 @@ config :nostrum,
 
 config :porcelain,
   goon_warn_if_missing: false
+
+config :graceful_stop, :hooks, [
+  [Ctl, :shutdown, []]
+]

@@ -47,4 +47,12 @@ defmodule Deutexrium.Server.Supervisor do
       }
     end)
   end
+
+  @spec shutdown() :: [:ok]
+  def shutdown do
+    children = DynamicSupervisor.which_children(__MODULE__)
+    for {_, pid, :worker, _} <- children do
+      pid |> Deutexrium.Server.RqRouter.shutdown
+    end
+  end
 end

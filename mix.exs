@@ -24,7 +24,8 @@ defmodule Deutexrium.MixProject do
       {:nostrum, github: "kraigie/nostrum", ref: "7f036c452f7c7c8422e8d86768217e606ef32255"},
       {:logger_file_backend, "~> 0.0"},
       {:markov, "~> 0.1"},
-      {:ex_hash_ring, "~> 6.0"}
+      {:ex_hash_ring, "~> 6.0"},
+      {:graceful_stop, "~> 0.2.0"}
     ]
   end
 end
