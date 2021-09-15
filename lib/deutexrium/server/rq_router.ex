@@ -23,10 +23,10 @@ defmodule Deutexrium.Server.RqRouter do
 
       pid when is_pid(pid) ->
         try do
-          result = GenServer.call(pid, rq, 1500)
+          result = GenServer.call(pid, rq, 4500)
           {map, result}
         catch
-          :exit, {:noproc, _} ->
+          :exit, _ ->
             Logger.warn("restarting server for target #{inspect target}")
             # kill it just in case
             Process.exit(pid, :normal)
