@@ -17,7 +17,6 @@ defmodule Deutexrium.Server.RqRouter do
 
     case map |> Map.get(id) do
       nil ->
-        Logger.debug("router-#{inspect self()}: starting server for target #{inspect target}")
         {:ok, pid} = GenServer.start(module, id)
         map = map |> Map.put(id, pid)
         forward_request(map, target, rq)
@@ -25,11 +24,9 @@ defmodule Deutexrium.Server.RqRouter do
       pid when is_pid(pid) ->
         if Process.alive?(pid) do
           ref = make_ref()
-          Logger.debug("router-#{inspect self()}: forwarding request to #{inspect target}")
           pid |> send({:"$gen_call", {self(), ref}, rq})
           {map, ref}
         else
-          Logger.debug("router-#{inspect self()}: server for target #{inspect target} died")
           # kill it just in case
           Process.exit(pid, :normal)
           forward_request(map |> Map.delete(id), target, rq)
@@ -41,7 +38,6 @@ defmodule Deutexrium.Server.RqRouter do
     [ring: ring] = :ets.lookup(:ring_state, :ring)
     {:ok, pid} = ring |> Ring.find_node(inspect target)
 
-    Logger.debug("chose router #{pid} for target #{inspect target}")
     pid
   end
 
@@ -117,7 +113,6 @@ defmodule Deutexrium.Server.RqRouter do
   @impl true
   def handle_info({ref, response}, %State{}=state) when is_reference(ref) do
     %{^ref => {receiver, response_ref}} = state.ref_receivers
-    Logger.debug("router-#{inspect self()}: forwarding response to #{receiver}")
     send(receiver, {response_ref, response})
     {:noreply, %{state |
       ref_receivers: state.ref_receivers |> Map.delete(ref)

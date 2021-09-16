@@ -26,7 +26,9 @@ defmodule Deutexrium.MixProject do
       {:markov, "~> 1.0"},
       {:ex_hash_ring, "~> 6.0"},
       {:graceful_stop, "~> 0.2.0"},
-      {:timex, "~> 3.0"}
+      {:timex, "~> 3.0"},
+      {:veritaserum, "~> 0.2.2"},
+      {:jason, "~> 1.2"}
     ]
   end
 end

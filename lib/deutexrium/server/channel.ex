@@ -4,6 +4,7 @@ defmodule Deutexrium.Server.Channel do
   alias Deutexrium.Persistence.{Meta, Model}
   alias Deutexrium.Server
   alias Server.RqRouter
+  import Sentiment
 
   defp get_setting({{_, guild}, meta}, setting) do
     if Map.get(meta, setting) == nil do
@@ -15,18 +16,39 @@ defmodule Deutexrium.Server.Channel do
 
   # these two wrappers exist to allow keeping track of the author
 
-  defp generate_message(%Markov{}=model, authored_only) do
-    tokens = model |> Markov.generate_tokens([], if authored_only do [:start, :from] else [:start, :start] end)
-    {author, tokens} = case tokens do
-      [:from, id | rest] -> {id, rest}
-      [id | rest] when authored_only -> {id, rest}
-      _ -> {:noauthor, tokens}
+  defp generate_message(%Markov{}=model, authored_only, last_sent) do
+    try do
+      # come up with start sequences and prefixes
+      # (yes, this is literally a bodge on top of a bodge)
+      start = cond do
+        authored_only and last_sent == :nosentiment -> [:start, :from]
+        authored_only and last_sent != :nosentiment -> [:from, last_sent]
+        not authored_only and last_sent == :nosentiment -> [:start, :start]
+        not authored_only and last_sent != :nosentiment -> [:from, last_sent]
+      end
+      pref = start -- [:start, :start]
+
+      Logger.debug("authored_only=#{inspect authored_only}; last_sent=#{inspect last_sent} -> start=#{inspect start}; pref=#{inspect pref}")
+
+      tokens = model |> Markov.generate_tokens(pref, start)
+      {author, tokens} = case tokens do
+        [:from, id, :from, sent | rest] when is_sentiment(sent) -> {id, rest} # author and sentiment tagging
+        [:from, sent | rest] when is_sentiment(sent) -> {:noauthor, rest} # sentiment tagging only
+        [:from, id | rest] when is_integer(id) -> {id, rest} # author tagging only
+        _ -> {:noauthor, tokens} # no tagging
+      end
+      {author, tokens |> Enum.join(" ")}
+    rescue # unknown sentiment (yet)
+      err ->
+        Logger.warn("sentimental generation fallback, err=#{Exception.format(:error, err, __STACKTRACE__)}")
+        generate_message(%Markov{}=model, authored_only, :nosentiment)
     end
-    {author, tokens |> Enum.join(" ")}
   end
 
-  defp train_model(%Markov{}=model, text, author) do
-    model |> Markov.train([:from, author | text |> String.split])
+  defp train_model(%Model{}=model, text, author) do
+    sentiment = Sentiment.detect(text)
+    markov = model.data |> Markov.train([:from, author, :from, model.last_sentiment | text |> String.split])
+    %{model | data: markov, last_sentiment: sentiment, trained_on: model.trained_on + 1}
   end
 
   defp likely_authored(%Markov{}=model) do
@@ -93,8 +115,7 @@ defmodule Deutexrium.Server.Channel do
       # train local model
       model = if train do
         Logger.info("channel-#{cid} server: training local model")
-        %{model | data: train_model(model.data, message, author_id),
-          trained_on: model.trained_on + 1}
+        train_model(model, message, author_id)
       else model
       end
 
@@ -110,8 +131,8 @@ defmodule Deutexrium.Server.Channel do
       autorate = get_setting({id, meta}, :autogen_rate)
       reply = cond do
         (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
-          Logger.info("channel-#{cid} server: automatic generation")
-          {:message, {_,_}=generate_message(model.data, get_setting({id, meta}, :force_authored))}
+          Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect model.last_sentiment}")
+          {:message, {_,_}=generate_message(model.data, get_setting({id, meta}, :force_authored), model.last_sentiment)}
 
         true -> :ok
       end
@@ -127,15 +148,15 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call(:generate, _from, {{cid, _}, _, model, timeout}=state) do
-    {_, text} = generate_message(model.data, false)
+  def handle_call({:generate, sentiment}, _from, {{cid, _}, _, model, timeout}=state) do
+    {_, text} = generate_message(model.data, false, sentiment)
 
     # remove mentions in global model
     text = if cid == 0 do
       Regex.replace(~r/<@!{0,1}[0-9]*>/, text, "**[mention removed]**")
     else text end
 
-    Logger.info("channel-#{cid} server: generating on demand")
+    Logger.info("channel-#{cid} server: generating on demand with sentiment=#{inspect sentiment}")
     {:reply, text, state, timeout}
   end
 
@@ -228,9 +249,9 @@ defmodule Deutexrium.Server.Channel do
     id |> RqRouter.route_to_chan({:message, msg, by_bot, author_id})
   end
 
-  @spec generate(server_id()) :: String.t()
-  def generate(id) when (is_integer(id) or is_tuple(id)) do
-    id |> RqRouter.route_to_chan(:generate)
+  @spec generate(server_id(), Sentiment.sentiment()) :: String.t()
+  def generate(id, sentiment \\ :nosentiment) when (is_integer(id) or is_tuple(id)) do
+    id |> RqRouter.route_to_chan({:generate, sentiment})
   end
 
   @spec reset(server_id(), atom()) :: :ok

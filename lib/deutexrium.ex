@@ -353,7 +353,9 @@ defmodule Deutexrium do
       bot_id = Nostrum.Cache.Me.get().id
       possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
       if String.contains?(msg.content, possible_mentions) do
-        text = Server.Channel.generate({msg.channel_id, msg.guild_id})
+        sent = Sentiment.detect(msg.content)
+        Logger.debug("mentioned with sentiment=#{sent}, responding with same")
+        text = Server.Channel.generate({msg.channel_id, msg.guild_id}, sent)
         simulate_typing(text, msg.channel_id)
         Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
       else

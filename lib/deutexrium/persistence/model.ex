@@ -1,6 +1,7 @@
 defmodule Deutexrium.Persistence.Model do
   defstruct data: %Markov{},
-    trained_on: 0, global_trained_on: 0
+    trained_on: 0, global_trained_on: 0,
+    last_sentiment: :neutral
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)
@@ -8,10 +9,10 @@ defmodule Deutexrium.Persistence.Model do
   end
 
   def load!(channel_id) when is_integer(channel_id) do
-    path(channel_id)
+    %Deutexrium.Persistence.Model{} |> Map.merge(path(channel_id)
         |> File.read!
         |> :zlib.gunzip
-        |> :erlang.binary_to_term
+        |> :erlang.binary_to_term)
   end
 
   def dump!(channel_id, %Deutexrium.Persistence.Model{}=data) when is_integer(channel_id) do
