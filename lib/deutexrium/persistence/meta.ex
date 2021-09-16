@@ -7,7 +7,8 @@ defmodule Deutexrium.Persistence.Meta do
     enable_actions: nil,
     ignore_bots: nil,
     remove_mentions: nil,
-    max_gen_len: nil
+    max_gen_len: nil,
+    webhook_data: nil
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)

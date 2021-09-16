@@ -6,33 +6,39 @@ defmodule Deutexrium do
   import Nostrum.Struct.Embed
   alias Deutexrium.Server
 
-  def binary_settings do
-    [
-      %{value: "train",
-        name: "message collection",
-        description: "train the channel-specific message generation model"},
-      %{value: "global_train",
-        name: "global message collection",
-        description: "thain the global message generation model shared across all channels and servers"},
-      %{value: "ignore_bots",
-        name: "bot ignoration",
-        description: "ignore other bot's messages"},
-      %{value: "remove_mentions",
-        name: "mention removal",
-        description: "remove mentions in generated messages (doesn't affect messages generated using the global model)"}
-    ]
-  end
+  @binary_settings [
+    %{value: "train",
+      name: "message collection",
+      description: "train the channel-specific message generation model"},
+    %{value: "global_train",
+      name: "global message collection",
+      description: "thain the global message generation model shared across all channels and servers"},
+    %{value: "ignore_bots",
+      name: "bot ignoration",
+      description: "ignore other bot's messages"},
+    %{value: "remove_mentions",
+      name: "mention removal",
+      description: "remove mentions in generated messages (doesn't affect messages generated using the global model)"}
+  ]
 
-  def non_binary_settings do
-    [
-      %{value: "autogen_rate",
-        name: "automatic generation rate",
-        description: "automatic message generation rate (one per <value> others' messages); disabled if set to 0"},
-      %{value: "max_gen_len",
-        name: "maximum /gen option value",
-        description: "maximum number of messages to generate by one batch using the /gen command"}
-    ]
-  end
+  @non_binary_settings [
+    %{value: "autogen_rate",
+      name: "automatic generation rate",
+      description: "automatic message generation rate (one per <value> others' messages); disabled if set to 0"},
+    %{value: "max_gen_len",
+      name: "maximum /gen option value",
+      description: "maximum number of messages to generate by one batch using the /gen command"}
+  ]
+
+  @command_help [
+    %{name: "impostor", value: "impostor", description: """
+    Registers a webhook to send messages with arbitrary avatars and usernames in this channel when generating them randomly in correspondence with the `autogen_rate` setting. The blue [BOT] badge next to the username is still present.
+    This will require the bot to have the **Manage Webhooks** permission both in the role menu and in the channel menu.
+    Any messages learned since approx. midnight sept. 16th 2021 UTC+0 contain author information. Messages learned before that don't.
+    To see the number of messages that contain author information please use `/status`. You may want to `/reset channel model` before using this command if this value is too small, though this is not required.
+    The registered webhook only affects this channel.
+    """}
+  ]
 
   def add_slash_commands(guild \\ 0) do
     commands = []
@@ -82,7 +88,8 @@ defmodule Deutexrium do
       {"privacy", "privacy policy"},
       {"support", "ways to get support"},
       {"scoreboard", "top-10 most active users in this server"},
-      {"rps", "start a game of Rock-Paper-Scissors with me"}
+      {"rps", "start a game of Rock-Paper-Scissors with me"},
+      {"impostor", "enable impersonation mode. Please read /help impostor before using this command!"}
     ]
     no_param = no_param |> Enum.map(fn {title, desc} ->
       %{name: title, description: desc}
@@ -96,10 +103,11 @@ defmodule Deutexrium do
         %{
           type: 3, # string
           name: "setting",
-          description: "setting to help with",
+          description: "setting or command to help with",
           required: false,
-          choices: binary_settings()
-              |> Enum.concat(non_binary_settings())
+          choices: @binary_settings
+              |> Enum.concat(@non_binary_settings)
+              |> Enum.concat(@command_help)
               |> Enum.map(fn val -> Map.delete(val, :description) end),
         }
       ]
@@ -170,7 +178,7 @@ defmodule Deutexrium do
               type: 3, #string
               name: "setting",
               description: "the setting to modify",
-              choices: binary_settings() |> Enum.map(fn val -> Map.delete(val, :description) end),
+              choices: @binary_settings |> Enum.map(fn val -> Map.delete(val, :description) end),
               required: true
             },
             %{
@@ -194,7 +202,7 @@ defmodule Deutexrium do
               type: 3, #string
               name: "setting",
               description: "the setting to modify",
-              choices: binary_settings() |> Enum.map(fn val -> Map.delete(val, :description) end),
+              choices: @binary_settings |> Enum.map(fn val -> Map.delete(val, :description) end),
               required: true
             },
             %{
@@ -226,7 +234,7 @@ defmodule Deutexrium do
               type: 3, #string
               name: "setting",
               description: "the setting to modify",
-              choices: non_binary_settings() |> Enum.map(fn val -> Map.delete(val, :description) end),
+              choices: @non_binary_settings |> Enum.map(fn val -> Map.delete(val, :description) end),
               required: true
             },
             %{
@@ -246,7 +254,7 @@ defmodule Deutexrium do
               type: 3, # string
               name: "setting",
               description: "the setting to modify",
-              choices: non_binary_settings() |> Enum.map(fn val -> Map.delete(val, :description) end),
+              choices: @non_binary_settings |> Enum.map(fn val -> Map.delete(val, :description) end),
               required: true
             },
             %{
@@ -361,12 +369,13 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help", options: [%{name: "setting", value: setting}]}}=inter, _}) do
     %{name: name, description: desc} =
-        binary_settings()
-        |> Enum.concat(non_binary_settings())
+        @binary_settings
+        |> Enum.concat(@non_binary_settings)
+        |> Enum.concat(@command_help)
         |> Enum.find_value(fn %{value: val}=map -> if val == setting, do: map end)
 
     embed = %Struct.Embed{}
-        |> put_title("Deuterium setting help")
+        |> put_title("Deuterium setting/command help")
         |> put_color(0xe6f916)
         |> put_field(name, desc)
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
@@ -444,6 +453,7 @@ defmodule Deutexrium do
         |> put_field("reset channel model", ":rotating_light: reset channel message generation model", true)
         |> put_field("search <word>", ":mag: search for a word in the model", true)
         |> put_field("forget <word>", ":skull: forget a specific word", true)
+        |> put_field("impostor", "<:amogus:887939317371138048> enable impersonation mode. **please read /help impostor before using**", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
@@ -639,7 +649,7 @@ defmodule Deutexrium do
     if check_admin_perm(inter) do
       meta = case target do
         "server" ->
-          Server.Guild.get_meta(inter.guild_id)
+          Server.Guild.get_meta(inter.guild_id) |> Map.delete(:webhook_data)
         "channel" ->
           Server.Channel.get_meta({inter.channel_id, inter.guild_id})
       end
@@ -647,7 +657,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Deuterium #{target} settings")
           |> put_color(0xe6f916)
-      embed = Enum.reduce(Enum.concat(binary_settings(), non_binary_settings()), embed, fn elm, acc ->
+      embed = Enum.reduce(Enum.concat(@binary_settings, @non_binary_settings), embed, fn elm, acc ->
         acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
       end)
 
@@ -691,6 +701,33 @@ defmodule Deutexrium do
     else
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
     end
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "impostor"}}=inter, _}) do
+    response = if check_admin_perm(inter) do
+      # delete existing webhook
+      case Server.Channel.get_meta({inter.channel_id, inter.guild_id}).webhook_data do
+        {id, _token} -> Api.delete_webhook(id, "removing existing webhook before adding a new one")
+        _ -> :ok
+      end
+      # create new webhook
+      case Api.create_webhook(inter.channel_id, %{name: "Deuterium", avatar: "https://cdn.discordapp.com/embed/avatars/0.png"}, "create webhook for impersonation") do
+        {:ok, %{id: hook_id, token: hook_token}} ->
+          data = {hook_id, hook_token}
+          Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
+          ":white_check_mark: **impersonation activated**"
+        {:error, %{status_code: 403}} ->
+          ":x: **bot is missing \"Manage Webhooks\" permission**"
+        {:error, err} ->
+          Logger.error("error adding webhook: #{inspect err}")
+          ":x: **unknown error**"
+      end
+    else
+      ":x: **missing \"administrator\" privilege**"
+    end
+    Api.create_interaction_response(inter, %{type: 4, data: %{content: response, flags: 64}})
   end
 
   def handle_event(_event) do
