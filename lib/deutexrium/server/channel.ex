@@ -15,10 +15,11 @@ defmodule Deutexrium.Server.Channel do
 
   # these two wrappers exist to allow keeping track of the author
 
-  defp generate_message(%Markov{}=model) do
-    tokens = model |> Markov.generate_tokens
+  defp generate_message(%Markov{}=model, authored_only) do
+    tokens = model |> Markov.generate_tokens([], if authored_only do [:start, :from] else [:start, :start] end)
     {author, tokens} = case tokens do
       [:from, id | rest] -> {id, rest}
+      [id | rest] when authored_only -> {id, rest}
       _ -> {:noauthor, tokens}
     end
     {author, tokens |> Enum.join(" ")}
@@ -110,7 +111,7 @@ defmodule Deutexrium.Server.Channel do
       reply = cond do
         (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
           Logger.info("channel-#{cid} server: automatic generation")
-          {:message, {_,_}=generate_message(model.data)}
+          {:message, {_,_}=generate_message(model.data, get_setting({id, meta}, :force_authored))}
 
         true -> :ok
       end
@@ -127,7 +128,7 @@ defmodule Deutexrium.Server.Channel do
 
   @impl true
   def handle_call(:generate, _from, {{cid, _}, _, model, timeout}=state) do
-    {_, text} = generate_message(model.data)
+    {_, text} = generate_message(model.data, false)
 
     # remove mentions in global model
     text = if cid == 0 do
