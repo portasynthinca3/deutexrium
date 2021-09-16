@@ -772,9 +772,14 @@ defmodule Deutexrium do
   defp try_send_as_webhook({_, text}, chan, :nil) do
     Api.create_message(chan, content: text)
   end
-  defp try_send_as_webhook({user_id, text}, _, {id, token}) do
+  defp try_send_as_webhook({user_id, text}=what, chan, {id, token}) do
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
-    Api.execute_webhook(id, token, %{content: text, username: user.username, avatar_url: ava})
+    case Api.execute_webhook(id, token, %{content: text, username: user.username, avatar_url: ava}) do
+      {:ok} -> :ok
+      {:error, err} ->
+        Logger.warn("webhook error: #{err}")
+        try_send_as_webhook(what, chan, :nil)
+    end
   end
 end
