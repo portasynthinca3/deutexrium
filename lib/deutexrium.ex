@@ -35,7 +35,7 @@ defmodule Deutexrium do
 
   @command_help [
     %{name: "impostor", value: "impostor", description: """
-    Registers a webhook to send messages with arbitrary avatars and usernames in this channel when generating them randomly in correspondence with the `autogen_rate` setting. The blue [BOT] badge next to the username is still present.
+    Registers a webhook to send messages with arbitrary avatars and usernames in this channel when generating them randomly in correspondence with the `autogen_rate` setting. The blue [BOT] badge next to the username is still present, and `(Deuterium)` is appended to the impersonated nickname.
     This will require the bot to have the **Manage Webhooks** permission both in the role menu and in the channel menu.
     Any messages learned since approx. midnight sept. 16th 2021 UTC+0 contain author information. Messages learned before that don't.
     To see the number of messages that contain author information please use `/status`. You may want to `/reset channel model` or `/turn channel force authored on` before using this command if this value is too small, though this is not required.
@@ -772,13 +772,16 @@ defmodule Deutexrium do
     :timer.sleep(delay)
   end
 
+  defp try_send_as_webhook({:noauthor, text}, chan, _) do
+    Api.create_message(chan, content: text)
+  end
   defp try_send_as_webhook({_, text}, chan, :nil) do
     Api.create_message(chan, content: text)
   end
   defp try_send_as_webhook({user_id, text}=what, chan, {id, token}) do
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
-    case Api.execute_webhook(id, token, %{content: text, username: user.username, avatar_url: ava}) do
+    case Api.execute_webhook(id, token, %{content: text, username: user.username <> " (Deuterium)", avatar_url: ava}) do
       {:ok} -> :ok
       {:error, err} ->
         Logger.warn("webhook error: #{err}")
