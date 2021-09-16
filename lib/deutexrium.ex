@@ -355,11 +355,11 @@ defmodule Deutexrium do
         Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
       else
         # only train if it doesn't contain bot mentions
+        meta = Server.Channel.get_meta({msg.channel_id, msg.guild_id})
         case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
           :ok -> :ok
-          {:message, {_, text}} ->
-            simulate_typing(text, msg.channel_id)
-            Api.create_message(msg.channel_id, text)
+          {:message, text} ->
+            try_send_as_webhook(text, msg.channel_id, meta.webhook_data)
         end
       end
     end
@@ -767,5 +767,14 @@ defmodule Deutexrium do
     delay = floor(words * ((40 + (10 * :rand.normal())) / 60) * 1000) # 40 +/-10 wpm
     Api.start_typing(channel)
     :timer.sleep(delay)
+  end
+
+  defp try_send_as_webhook({_, text}, chan, :nil) do
+    Api.create_message(chan, content: text)
+  end
+  defp try_send_as_webhook({user_id, text}, _, {id, token}) do
+    {:ok, user} = Api.get_user(user_id)
+    ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
+    Api.execute_webhook(id, token, %{content: text, username: user.username, avatar_url: ava})
   end
 end

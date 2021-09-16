@@ -12,10 +12,10 @@ config :logger,
   backends: [:console, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel],
-  level: :debug
+  level: :info
 config :logger, :debug_log,
   path: "deuterium.log",
-  level: :info
+  level: :debug
 
 config :nostrum,
   token: System.get_env("DEUTEX_TOKEN"),
