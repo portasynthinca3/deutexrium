@@ -11,11 +11,11 @@ defmodule Sentiment do
   def detect(text) do
     try do
       case text |> Veritaserum.analyze do
-        i when i <= -4 -> :strongly_negative
-        i when i >= -3 and i <= -1 -> :negative
+        i when i <= -3 -> :strongly_negative
+        i when i >= -2 and i <= -1 -> :negative
         0 -> :neutral
-        i when i >= 1 and i <= 3 -> :positive
-        i when i >= 4 -> :strongly_positive
+        i when i >= 1 and i <= 2 -> :positive
+        i when i >= 3 -> :strongly_positive
       end
     rescue
       _ -> :neutral

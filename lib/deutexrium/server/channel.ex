@@ -16,19 +16,19 @@ defmodule Deutexrium.Server.Channel do
 
   # these two wrappers exist to allow keeping track of the author
 
-  defp generate_message(%Markov{}=model, authored_only, last_sent) do
+  defp generate_message(%Markov{}=model, authored_only, sent) do
     try do
       # come up with start sequences and prefixes
       # (yes, this is literally a bodge on top of a bodge)
       start = cond do
-        authored_only and last_sent == :nosentiment -> [:start, :from]
-        authored_only and last_sent != :nosentiment -> [:from, last_sent]
-        not authored_only and last_sent == :nosentiment -> [:start, :start]
-        not authored_only and last_sent != :nosentiment -> [:from, last_sent]
+        authored_only and sent == :nosentiment -> [:start, :from]
+        authored_only and sent != :nosentiment -> [:from, sent]
+        not authored_only and sent == :nosentiment -> [:start, :start]
+        not authored_only and sent != :nosentiment -> [:from, sent]
       end
       pref = start -- [:start, :start]
 
-      Logger.debug("authored_only=#{inspect authored_only}; last_sent=#{inspect last_sent} -> start=#{inspect start}; pref=#{inspect pref}")
+      Logger.debug("authored_only=#{inspect authored_only}; sent=#{inspect sent} -> start=#{inspect start}; pref=#{inspect pref}")
 
       tokens = model |> Markov.generate_tokens(pref, start)
       {author, tokens} = case tokens do
@@ -47,8 +47,8 @@ defmodule Deutexrium.Server.Channel do
 
   defp train_model(%Model{}=model, text, author) do
     sentiment = Sentiment.detect(text)
-    markov = model.data |> Markov.train([:from, author, :from, model.last_sentiment | text |> String.split])
-    %{model | data: markov, last_sentiment: sentiment, trained_on: model.trained_on + 1}
+    markov = model.data |> Markov.train([:from, author, :from, sentiment | text |> String.split])
+    %{model | data: markov, trained_on: model.trained_on + 1}
   end
 
   defp likely_authored(%Markov{}=model) do
@@ -113,8 +113,9 @@ defmodule Deutexrium.Server.Channel do
       global_train = id != 0 and get_setting({id, meta}, :global_train)
 
       # train local model
+      sentiment = Sentiment.detect(message)
       model = if train do
-        Logger.info("channel-#{cid} server: training local model")
+        Logger.info("channel-#{cid} server: training local model with sentiment=#{inspect sentiment}")
         train_model(model, message, author_id)
       else model
       end
@@ -131,8 +132,8 @@ defmodule Deutexrium.Server.Channel do
       autorate = get_setting({id, meta}, :autogen_rate)
       reply = cond do
         (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
-          Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect model.last_sentiment}")
-          {:message, {_,_}=generate_message(model.data, get_setting({id, meta}, :force_authored), model.last_sentiment)}
+          Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
+          {:message, {_,_}=generate_message(model.data, get_setting({id, meta}, :force_authored), sentiment)}
 
         true -> :ok
       end

@@ -1,7 +1,6 @@
 defmodule Deutexrium.Persistence.Model do
   defstruct data: %Markov{},
-    trained_on: 0, global_trained_on: 0,
-    last_sentiment: :neutral
+    trained_on: 0, global_trained_on: 0
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)
