@@ -683,6 +683,7 @@ defmodule Deutexrium do
       embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
           |> Enum.filter(fn
             {k, _} when is_atom(k) -> false
+            {k, _} when is_integer(k) -> false
             {k, _} ->
               k |> String.downcase |> String.contains?(word)
             end)
