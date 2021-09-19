@@ -43,6 +43,8 @@ defmodule Deutexrium do
     """}
   ]
 
+  @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.yamka.app/admin-cmd/admin-commands-notice)"
+
   def add_slash_commands(guild \\ 0) do
     commands = []
 
@@ -404,7 +406,7 @@ defmodule Deutexrium do
             |> Enum.join("\n")
         Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
       else
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**", flags: 64}})
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.yamka.app/command/gen_number)", flags: 64}})
       end
     end
   end
@@ -432,6 +434,8 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium commands")
         |> put_color(0xe6f916)
+        |> put_description("More extensive help information at https://deut.yamka.app/")
+        |> put_url("https://deut.yamka.app/")
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
@@ -467,6 +471,7 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium donations")
         |> put_color(0xe6f916)
+
         |> put_field(":loudspeaker: tell your friends about the bot", "...or invite it to other servers")
         |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
         |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
@@ -478,6 +483,8 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium privacy policy")
         |> put_color(0xe6f916)
+        |> put_url("https://deut.yamka.app/privacy-policy")
+
         |> put_field("1. SCOPE", ~S"""
            This message describes how the Deuterium Discord bot ("Deuterium", "the bot", "bot"), its creator ("I", "me") processes its Users' ("you") data.
            """)
@@ -536,6 +543,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Deuterium status")
           |> put_color(0xe6f916)
+          |> put_url("https://deut.yamka.app/commands/status")
 
           |> put_field("Messages learned", chan_model.trained_on)
           |> put_field("Messages contributed to the global model", chan_model.global_trained_on)
@@ -554,13 +562,18 @@ defmodule Deutexrium do
     %{guilds: guild_server_cnt, channels: chan_server_cnt} = Server.Supervisor.server_count
     {uptime, _} = :erlang.statistics(:wall_clock)
     uptime = uptime |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
+    been_created_for = ((DateTime.utc_now() |> DateTime.to_unix(:millisecond)) - (Nostrum.Cache.Me.get().id
+        |> Bitwise.>>>(22) |> Kernel.+(1420070400000)))
+        |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
 
     embed = %Struct.Embed{}
         |> put_title("Deuterium resource usage")
         |> put_color(0xe6f916)
+        |> put_url("https://deut.yamka.app/commands/stats")
 
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
         |> put_field("Bot uptime", "#{uptime}", true)
+        |> put_field("Time since I was created", "#{been_created_for}", true)
         |> put_field("Number of known channels", "#{Deutexrium.Persistence.channel_cnt}", true)
         |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
@@ -578,7 +591,9 @@ defmodule Deutexrium do
     unless inter_notice(inter) do
       %{user_stats: scoreboard} = Server.Guild.get_meta(inter.guild_id)
 
-      embed = %Struct.Embed{} |> put_title("Deuterium scoreboard") |> put_color(0xe6f916)
+      embed = %Struct.Embed{} |> put_title("Deuterium scoreboard")
+          |> put_color(0xe6f916)
+          |> put_url("https://deut.yamka.app/commands/scoreboard")
       top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
       {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
         {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
@@ -602,7 +617,7 @@ defmodule Deutexrium do
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -622,7 +637,7 @@ defmodule Deutexrium do
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to** #{setting_prettify(value)}", flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -644,7 +659,7 @@ defmodule Deutexrium do
       end
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -662,13 +677,14 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Deuterium #{target} settings")
           |> put_color(0xe6f916)
+          |> put_url("https://deut.yamka.app/admin-cmd/settings")
       embed = Enum.reduce(Enum.concat(@binary_settings, @non_binary_settings), embed, fn elm, acc ->
         acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
       end)
 
       Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -680,6 +696,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Search results")
           |> put_color(0xe6f916)
+          |> put_url("https://deut.yamka.app/admin-cmd/search")
       embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
           |> Enum.filter(fn
             {k, _} when is_atom(k) -> false
@@ -694,7 +711,7 @@ defmodule Deutexrium do
 
       Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -705,7 +722,7 @@ defmodule Deutexrium do
       Server.Channel.forget({inter.channel_id, inter.guild_id}, word)
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **i forgor `#{word}` :skull:**", flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **missing \"administrator\" privilege**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
   end
 
@@ -725,13 +742,13 @@ defmodule Deutexrium do
           Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
           ":white_check_mark: **impersonation activated**"
         {:error, %{status_code: 403}} ->
-          ":x: **bot is missing \"Manage Webhooks\" permission**"
+          ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.yamka.app/admin-cmd/impostor)"
         {:error, err} ->
           Logger.error("error adding webhook: #{inspect err}")
           ":x: **unknown error**"
       end
     else
-      ":x: **missing \"administrator\" privilege**"
+      @missing_privilege
     end
     Api.create_interaction_response(inter, %{type: 4, data: %{content: response, flags: 64}})
   end
