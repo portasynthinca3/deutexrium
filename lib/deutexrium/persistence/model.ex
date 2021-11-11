@@ -4,7 +4,7 @@ defmodule Deutexrium.Persistence.Model do
 
   defstruct data: %Markov{},
     trained_on: 0, global_trained_on: 0,
-    messages: []
+    messages: [], forget_operations: []
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)

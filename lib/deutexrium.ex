@@ -492,7 +492,7 @@ defmodule Deutexrium do
         |> put_description("More extensive help information at https://deut.yamka.app/")
         |> put_url("https://deut.yamka.app/")
 
-        |> put_field(":loudspeaker: ANNOUNCEMENT", "A bug was recently found in how message generation models were trained that led to poor performance if authorship and/or sentiment tracking were used. As a result, the models have to be converted before use with the new and improved code. This conversion process is performed automatically when the model is first loaded. If you encounter any issues (i.e. data loss), please refer to /support.")
+        |> put_field(":loudspeaker: ANNOUNCEMENT", "A bug was recently found in how message generation models were trained that led to poor output quality if authorship and/or sentiment tracking were used. As a result, I have completely wiped all generation models. In addition, I'm now saving raw message content along with Markov models so this this never happens again and I'm able to re-train them in case a bug like this pops up. This means that the privacy policy had to be updated. If you object to the changes, please either stop using the bot or reach out to me if you'd like to opt-out or suggest an alternative solution. The bot is open source so you can [take a look at its code](https://github.com/portasynthinca3/deutexrium) and evaluate how it uses your data.")
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
