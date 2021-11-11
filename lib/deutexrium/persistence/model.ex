@@ -1,6 +1,10 @@
 defmodule Deutexrium.Persistence.Model do
+  require Logger
+  alias Deutexrium.Persistence.Model
+
   defstruct data: %Markov{},
-    trained_on: 0, global_trained_on: 0
+    trained_on: 0, global_trained_on: 0,
+    messages: []
 
   defp path(channel_id) do
     Application.fetch_env!(:deutexrium, :data_path)
@@ -8,13 +12,13 @@ defmodule Deutexrium.Persistence.Model do
   end
 
   def load!(channel_id) when is_integer(channel_id) do
-    %Deutexrium.Persistence.Model{} |> Map.merge(path(channel_id)
+    %Model{} |> Map.merge(path(channel_id)
         |> File.read!
         |> :zlib.gunzip
         |> :erlang.binary_to_term)
   end
 
-  def dump!(channel_id, %Deutexrium.Persistence.Model{}=data) when is_integer(channel_id) do
+  def dump!(channel_id, %Model{}=data) when is_integer(channel_id) do
     data = data
         |> :erlang.term_to_binary
         |> :zlib.gzip

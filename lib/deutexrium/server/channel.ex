@@ -32,7 +32,7 @@ defmodule Deutexrium.Server.Channel do
   defp train_model(%Model{}=model, text, author) do
     sentiment = Sentiment.detect(text)
     markov = model.data |> Markov.train([{:sentiment, sentiment}, {:author, author} | text |> String.split])
-    %{model | data: markov, trained_on: model.trained_on + 1}
+    %{model | data: markov, trained_on: model.trained_on + 1, messages: [text | model.messages]}
   end
 
 

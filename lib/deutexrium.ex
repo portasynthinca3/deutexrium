@@ -31,13 +31,6 @@ defmodule Deutexrium do
   ]
 
   @command_help [
-    %{name: "impostor", value: "impostor", description: """
-    Registers a webhook to send messages with arbitrary avatars and usernames in this channel when generating them randomly in correspondence with the `autogen_rate` setting. The blue [BOT] badge next to the username is still present, and `(Deuterium)` is appended to the impersonated nickname.
-    This will require the bot to have the **Manage Webhooks** permission both in the role menu and in the channel menu.
-    Any messages learned since approx. midnight sept. 16th 2021 UTC+0 contain author information. Messages learned before that don't.
-    To see the number of messages that contain author information please use `/status`. You may want to `/reset channel model` or `/turn channel force authored on` before using this command if this value is too small, though this is not required.
-    The registered webhook only affects this channel.
-    """}
   ]
 
   @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.yamka.app/admin-cmd/admin-commands-notice)"
@@ -499,13 +492,15 @@ defmodule Deutexrium do
         |> put_description("More extensive help information at https://deut.yamka.app/")
         |> put_url("https://deut.yamka.app/")
 
+        |> put_field(":loudspeaker: ANNOUNCEMENT", "A bug was recently found in how message generation models were trained that led to poor performance if authorship and/or sentiment tracking were used. As a result, the models have to be converted before use with the new and improved code. This conversion process is performed automatically when the model is first loaded. If you encounter any issues (i.e. data loss), please refer to /support.")
+
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
         |> put_field("help <setting>", ":information_source: show settings information", true)
         |> put_field("status", ":green_circle: show the current stats", true)
         |> put_field("stats", ":yellow_circle: show how much resources I use", true)
         |> put_field("gen <count>", ":1234: generate <count> (1 if omitted) messages using the current channel's model immediately", true)
-        |> put_field("gen_by [sentiment] [user]", ":face_with_monocle: generate a message with a specific sentiment and/or authorship using the current channel's model immediately", true)
+        |> put_field("gen_by [sentiment] [@user]", ":face_with_monocle: generate a message with a specific sentiment and/or authorship using the current channel's model immediately", true)
         |> put_field("gen_from #channel", ":level_slider: immediately generate a message using the mentioned channel's model", true)
         |> put_field("ggen", ":rocket: immediately generate a message using the global model", true)
         |> put_field("donate", ":question: ways to support me", true)
@@ -532,11 +527,12 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}}=inter, _}) do
     embed = %Struct.Embed{}
-        |> put_title("Deuterium donations")
+        |> put_title("Ways to support Deuterium")
         |> put_color(0xe6f916)
 
         |> put_field(":loudspeaker: tell your friends about the bot", "...or invite it to other servers")
         |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
+        |> put_field(":money_mouth: donate via PayPal", "https://paypal.me/portasynthinca3")
         |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
@@ -566,8 +562,8 @@ defmodule Deutexrium do
            - Global Markov chain model which stores content described above
            - Channel, user and server IDs
            - User-to-message-count relationship for `/scoreboard`
+           - Raw message content to re-train the models in case the format changes
            Deuterium does **not** store the following data:
-           - Message content
            - User nicknames/tags
            - Any other data not mentioned in the list above
            """)
@@ -854,6 +850,9 @@ defmodule Deutexrium do
     :timer.sleep(delay)
   end
 
+  defp try_sending_webhook({0, _, text}, chan, _) do
+    Api.create_message(chan, content: text)
+  end
   defp try_sending_webhook({_, _, text}, chan, :nil) do
     Api.create_message(chan, content: text)
   end
