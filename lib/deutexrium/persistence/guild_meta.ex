@@ -7,8 +7,7 @@ defmodule Deutexrium.Persistence.GuildMeta do
     enable_actions: true,
     ignore_bots: true,
     remove_mentions: false,
-    max_gen_len: 10,
-    force_authored: false
+    max_gen_len: 10
 
   defp path(guild_id) do
     Application.fetch_env!(:deutexrium, :data_path)

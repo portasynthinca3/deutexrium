@@ -21,4 +21,15 @@ defmodule Sentiment do
       _ -> :neutral
     end
   end
+
+  @spec name(sentiment()) :: String.t()
+  def name(sent) do
+    case sent do
+      :strongly_positive -> "strongly positive"
+      :positive -> "positive"
+      :neutral -> "neutral"
+      :negative -> "negative"
+      :strongly_negative -> "strongly negative"
+    end
+  end
 end

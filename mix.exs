@@ -21,7 +21,7 @@ defmodule Deutexrium.MixProject do
   defp deps do
     [
       {:gun, github: "ninenines/gun", override: true}, # specific version required by nostrum
-      {:nostrum, github: "kraigie/nostrum", ref: "7f036c452f7c7c8422e8d86768217e606ef32255"},
+      {:nostrum, github: "kraigie/nostrum", ref: "1776edbfd7a6e168e71beaa486abc3b3de71d4d2"},
       {:logger_file_backend, "~> 0.0"},
       {:markov, "~> 1.0"},
       {:ex_hash_ring, "~> 6.0"},

@@ -8,7 +8,7 @@ defmodule MarkovTool do
   end
 
   def forget_token(%Markov{}=model, token) do
-    # removelinks that point to the token
+    # remove links that point to the token
     %{model | links: model.links |> Enum.map(fn
       {[_, _]=k, v} ->
         {k, Enum.filter(v, fn {k, _} -> k != token end) |> Enum.into(%{})}
