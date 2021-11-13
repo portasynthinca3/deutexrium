@@ -372,10 +372,13 @@ defmodule Deutexrium do
       possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
       if String.contains?(msg.content, possible_mentions) do
         sent = Sentiment.detect(msg.content)
-        Logger.debug("mentioned with sentiment=#{sent}, responding with same")
-        {_, _, text} = Server.Channel.generate({msg.channel_id, msg.guild_id}, sent)
-        simulate_typing(text, msg.channel_id)
-        Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
+        Logger.debug("mentioned with sentiment=#{inspect sent}, responding with same")
+        case Server.Channel.generate({msg.channel_id, msg.guild_id}, sent) do
+          {_, _, text} ->
+            simulate_typing(text, msg.channel_id)
+            Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
+          :error -> :ok
+        end
       else
         # only train if it doesn't contain bot mentions
         meta = Server.Channel.get_meta({msg.channel_id, msg.guild_id})
