@@ -452,13 +452,14 @@ defmodule Deutexrium do
       user = unless user == nil, do: :erlang.binary_to_integer(user)
 
       case Server.Channel.generate(id, sentiment, user) do
-        {_, _, _} = result ->
+        {author, sentiment, text} ->
           webhook = Server.Channel.get(id, :webhook_data)
           Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
             {_, _} -> ":white_check_mark: **the response will be sent shortly**"
             nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.yamka.app/commands/impostor)**"
           end, flags: 64}})
-          try_sending_webhook(result, inter.channel_id, webhook)
+          text = text <> "\n||this message was generated in response to a `/gen_by` invocation by <@#{inter.member.user.id}>||"
+          try_sending_webhook({author, sentiment, text}, inter.channel_id, webhook)
 
         :error ->
           Api.create_interaction_response(inter, %{type: 4, data: %{content: cond do
