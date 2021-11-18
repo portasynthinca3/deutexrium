@@ -439,7 +439,7 @@ defmodule Deutexrium do
     end
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: options}=data}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: options}}=inter, _}) do
     unless inter_notice(inter) do
       id = {inter.channel_id, inter.guild_id}
       {sentiment, user} = case options do
@@ -713,13 +713,18 @@ defmodule Deutexrium do
         numeric when numeric in [:autogen_rate, :max_gen_len] ->
           try do
             :erlang.binary_to_integer(value)
-          rescue _ -> 0 end
+          rescue _ ->
+            case value do
+              "nil" -> :nil
+              _ -> 0
+            end
+          end
       end
       case target do
         "server" -> Server.Guild.set(inter.guild_id, setting, value)
         "channel" -> Server.Channel.set({inter.channel_id, inter.guild_id}, setting, value)
       end
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to #{setting_prettify(value)}**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target}'s `#{setting}` set to** #{setting_prettify(value)}", flags: 64}})
     else
       Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
     end
@@ -826,7 +831,7 @@ defmodule Deutexrium do
       nil -> ":o: **nil**"
       true -> ":white_check_mark: **on**"
       false -> ":x: **off**"
-      val -> "#{val}"
+      val -> "**`#{val}`**"
     end
   end
 
@@ -866,7 +871,7 @@ defmodule Deutexrium do
     case Api.execute_webhook(id, token, %{content: text, username: user.username <> " (Deuterium)", avatar_url: ava}) do
       {:ok} -> :ok
       {:error, err} ->
-        Logger.warn("webhook error: #{err}")
+        Logger.warn("webhook error: #{inspect err}")
         try_sending_webhook(what, chan, :nil)
     end
   end
