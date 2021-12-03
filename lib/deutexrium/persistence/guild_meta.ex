@@ -2,12 +2,12 @@ defmodule Deutexrium.Persistence.GuildMeta do
   defstruct train: true,
     global_train: false,
     autogen_rate: 20,
-    user_stats: %{},
-    mood: 50,
+    impostor_rate: 100,
     enable_actions: true,
     ignore_bots: true,
     remove_mentions: false,
-    max_gen_len: 10
+    max_gen_len: 10,
+    user_stats: %{}
 
   defp path(guild_id) do
     Application.fetch_env!(:deutexrium, :data_path)

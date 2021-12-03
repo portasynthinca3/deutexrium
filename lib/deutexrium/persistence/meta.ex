@@ -2,12 +2,13 @@ defmodule Deutexrium.Persistence.Meta do
   defstruct train: nil,
     global_train: nil,
     autogen_rate: nil,
-    total_msgs: 0,
-    next_gen_milestone: 20,
+    impostor_rate: nil,
     enable_actions: nil,
     ignore_bots: nil,
     remove_mentions: nil,
     max_gen_len: nil,
+    # system data
+    total_msgs: 0,
     webhook_data: nil
 
   defp path(channel_id) do
