@@ -458,7 +458,6 @@ defmodule Deutexrium do
         [%{name: "user", value: u}] -> {"neutral", u}
       end
       sentiment = :erlang.binary_to_existing_atom(sentiment)
-      user = unless user == nil, do: :erlang.binary_to_integer(user)
 
       case Server.Channel.generate(id, sentiment, user) do
         {author, sentiment, text} ->
