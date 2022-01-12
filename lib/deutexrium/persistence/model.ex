@@ -6,7 +6,7 @@ defmodule Deutexrium.Persistence.Model do
   alias Deutexrium.Persistence.Model
 
   @derive Jason.Encoder
-  defstruct data: %Markov{},
+  defstruct data: %Markov{sanitize_tokens: true},
     trained_on: 0, global_trained_on: 0,
     messages: [], forget_operations: []
 

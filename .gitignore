@@ -24,4 +24,4 @@ deutexrium-*.tar
 
 /.elixir_ls/
 /deuterium.log*
-/deut_models.tar*
+/bup*.tar*
