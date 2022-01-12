@@ -1,4 +1,6 @@
 defmodule Deutexrium.Persistence.Meta do
+  @derive {Jason.Encoder, only: [:train, :global_train, :autogen_rate, :impostor_rate,
+      :enable_actions, :ignore_bots, :remove_mentions, :max_gen_len]}
   defstruct train: nil,
     global_train: nil,
     autogen_rate: nil,

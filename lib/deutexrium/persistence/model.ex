@@ -1,7 +1,11 @@
+require Protocol
+Protocol.derive(Jason.Encoder, Markov)
+
 defmodule Deutexrium.Persistence.Model do
   require Logger
   alias Deutexrium.Persistence.Model
 
+  @derive Jason.Encoder
   defstruct data: %Markov{},
     trained_on: 0, global_trained_on: 0,
     messages: [], forget_operations: []

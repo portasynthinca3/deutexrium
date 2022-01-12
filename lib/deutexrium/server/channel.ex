@@ -170,6 +170,17 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
+  def handle_call({:export, format}, _from, {{cid, _}, meta, model, timeout}=state) do
+    Logger.info("channel-#{cid} server: exporting in #{inspect format}")
+    encode = case format do
+      :etf_gz -> &(&1 |> :erlang.term_to_binary |> :zlib.gzip())
+      :json -> &Jason.encode!/1
+      :bson -> &Cyanide.encode!/1
+    end
+    {:reply, {encode.(meta), encode.(model)}, state, timeout}
+  end
+
+  @impl true
   def handle_cast({:shutdown, freeze}, {{id, _}, _, _, _}=state) do
     handle_shutdown(state, not freeze)
     if freeze do
@@ -253,5 +264,10 @@ defmodule Deutexrium.Server.Channel do
   @spec get(server_id(), atom()) :: :ok
   def forget(id, token) when is_integer(id) or is_tuple(id) do
     id |> RqRouter.route_to_chan({:forget, token})
+  end
+
+  @spec export(server_id(), atom()) :: binary()
+  def export(id, format) when is_integer(id) or is_tuple(id) do
+    id |> RqRouter.route_to_chan({:export, format})
   end
 end

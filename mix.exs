@@ -22,8 +22,9 @@ defmodule Deutexrium.MixProject do
     [
       # {:gun, github: "ninenines/gun", override: true}, # specific version required by nostrum
       {:nostrum, github: "kraigie/nostrum", ref: "master"},
-      # {:nostrum, "~> 0.4.6"},
-      {:logger_file_backend, "~> 0.0"},
+      # {:nostrum, "~> 0.5.0-rc1"},
+      {:logger_file_backend, "~> 0.0.13"},
+      {:cyanide, "~> 1.0"},
       {:markov, "~> 1.1"},
       {:ex_hash_ring, "~> 6.0"},
       {:graceful_stop, "~> 0.2.0"},

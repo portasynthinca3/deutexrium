@@ -309,6 +309,35 @@ defmodule Deutexrium do
       ]
     } | commands]
 
+    commands = [%{
+      name: "export",
+      description: "export data",
+      options: [
+        %{
+          type: 3, # string
+          name: "resource",
+          description: "resource to export",
+          required: true,
+          choices: [
+            %{value: "chan", name: "channel model and settings"},
+            %{value: "guild", name: "server settings"}
+          ],
+        },
+        %{
+          type: 3, # string
+          name: "format",
+          description: "encoding format",
+          required: true,
+          choices: [
+            %{value: "etf_gz", name: "etf.gz"},
+            # TODO: doesn't work.
+            # %{value: "json", name: "json"},
+            # %{value: "bson", name: "bson"}
+          ],
+        }
+      ]
+    } | commands]
+
     {:ok, _} = if guild == 0 do
       Api.bulk_overwrite_global_application_commands(commands)
     else
@@ -827,6 +856,44 @@ defmodule Deutexrium do
     end
     Api.create_interaction_response(inter, %{type: 4, data: %{content: response, flags: 64}})
   end
+
+
+
+ #def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn",   options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "export", options: [%{value: resource}, %{value: format}]}}=inter, _}) do
+    format = :erlang.binary_to_atom(format)
+    extension = case format do
+      :etf_gz -> ".etf.gz"
+      :json -> ".json"
+      :bson -> ".bson"
+    end
+    if check_admin_perm(inter) do
+      case Api.create_dm(inter.user.id) do
+        {:error, _} ->
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I couldnt't contact you via DMs. Check your settings**", flags: 64}})
+        {:ok, %{id: dm_id}} ->
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **Your data package is being exported**", flags: 64}})
+          case resource do
+            "chan" ->
+              {meta, model} = Server.Channel.export({inter.channel_id, inter.guild_id}, format)
+              Api.create_message!(dm_id, %{content: ":white_check_mark: **Your data package is ready**", files: [
+                %{name: "meta_#{inter.channel_id}#{extension}", body: meta},
+                %{name: "model_#{inter.channel_id}#{extension}", body: model}
+              ]})
+            "guild" ->
+              meta = Server.Guild.export(inter.guild_id, format)
+              Api.create_message!(dm_id, %{content: ":white_check_mark: **Your data package is ready**", files: [
+                %{name: "guild_meta_#{inter.guild_id}#{extension}", body: meta}
+              ]})
+          end
+
+      end
+    else
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
+    end
+  end
+
+
 
   def handle_event(_event) do
     :noop

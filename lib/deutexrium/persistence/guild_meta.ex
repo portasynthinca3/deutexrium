@@ -1,4 +1,5 @@
 defmodule Deutexrium.Persistence.GuildMeta do
+  @derive Jason.Encoder
   defstruct train: true,
     global_train: false,
     autogen_rate: 20,

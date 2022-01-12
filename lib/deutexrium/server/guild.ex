@@ -44,6 +44,17 @@ defmodule Deutexrium.Server.Guild do
   end
 
   @impl true
+  def handle_call({:export, format}, _from, {id, meta, timeout}=state) do
+    Logger.info("guild-#{id} server: exporting in #{inspect format}")
+    encode = case format do
+      :etf_gz -> &(&1 |> :erlang.term_to_binary |> :zlib.gzip())
+      :json -> &Jason.encode!/1
+      :bson -> &Cyanide.encode!/1
+    end
+    {:reply, encode.(meta), state, timeout}
+  end
+
+  @impl true
   def handle_cast({:shutdown, freeze}, {id, _, _}=state) do
     handle_shutdown(state, not freeze)
     if freeze do
@@ -99,5 +110,10 @@ defmodule Deutexrium.Server.Guild do
   @spec set(integer(), atom(), any()) :: :ok
   def set(id, setting, value) when is_integer(id) and is_atom(setting) do
     id |> RqRouter.route_to_guild({:set, setting, value})
+  end
+
+  @spec export(integer(), atom()) :: binary()
+  def export(id, format) when is_integer(id) and is_atom(format) do
+    id |> RqRouter.route_to_guild({:export, format})
   end
 end
