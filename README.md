@@ -18,8 +18,8 @@ Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Disc
 ### Running
 Something like `DEUTEX_TOKEN=... iex -S mix`
 
-### Usage notice
-If you integrate this bot's functionality into your own bot, or even just straight up copy it, you must credit me (portasynthinca3) as the creator of the original software. You may not change or remove the link mentioned in the response of `/donate`, however you might add your own.
+### Exporting data from the master Deuterium instance
+If you own a Discord server that you'd like to be served by a self-hosted instance of this bot and you have used this one before, you have the option of importing existing data. To do that, run the `/export` command of the master instance for both resource types (`channel` and `guild`). The three files you received should be placed in the `/var/deutex_data` directory on the machine that hosts your Deuterium instance (unless that path was changed in `config/config.exs`)
 
 ## Modification
 If you're familiar with Elixir and OTP, take a look inside `/supervision_tree.txt` to learn more about its internal structure
