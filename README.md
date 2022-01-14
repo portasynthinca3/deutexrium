@@ -12,6 +12,8 @@ Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Disc
 
 ### Setting up
   - install Elixir and Mix
+  - install InfluxDB v1.x and create a database named `deuterium`, it will be used to store stats
+  - (optionally) install and configure Grafana to look at those stats
   - run `mix deps.get`
   - tweak self-explanatory settings in `config/config.exs` (optional)
 

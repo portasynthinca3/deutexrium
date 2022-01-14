@@ -16,7 +16,9 @@ defmodule Deutexrium.Sup do
     children = [
       Deutexrium,
       Deutexrium.Server.Supervisor,
-      Deutexrium.RingStarter
+      Deutexrium.RingStarter,
+      Deutexrium.Influx.LoadCntr,
+      Deutexrium.Influx
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

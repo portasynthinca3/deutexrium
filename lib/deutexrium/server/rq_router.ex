@@ -1,3 +1,10 @@
+defmodule Deutexrium.Server.RqRouter.State do
+  defstruct guild_pids: %{},
+            channel_pids: %{},
+            ref_receivers: %{},
+            shut_down: false
+end
+
 defmodule Deutexrium.Server.RqRouter do
   use GenServer
   require Logger
@@ -136,12 +143,12 @@ defmodule Deutexrium.Server.RqRouter do
     router_pid(target) |> GenServer.call({:route, target, rq})
   end
 
-  @spec route_to_guild(:channel|:guild, any()) :: any()
+  @spec route_to_guild(integer(), any()) :: any()
   def route_to_guild(id, rq) when is_integer(id) do
     route({:guild, id}, rq)
   end
 
-  @spec route_to_chan({:channel|:guild, integer()}, any()) :: any()
+  @spec route_to_chan({integer(), integer()}, any()) :: any()
   def route_to_chan({cid, gid}=id, rq) when is_integer(cid) and is_integer(gid) do
     route({:channel, id}, rq)
   end

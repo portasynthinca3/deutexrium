@@ -23,6 +23,7 @@ defmodule Deutexrium.Server.Channel do
       end
       tokens = model |> Markov.generate_tokens(start -- [:start, :start], start)
       [{:sentiment, sentiment}, {:author, author} | text_tokens] = tokens
+      Deutexrium.Influx.LoadCntr.add(:gen)
       {author, sentiment, text_tokens |> Enum.join(" ")}
     rescue
       _ -> :error
@@ -32,7 +33,13 @@ defmodule Deutexrium.Server.Channel do
   defp train_model(%Model{}=model, text, author) do
     sentiment = Sentiment.detect(text)
     markov = model.data |> Markov.train([{:sentiment, sentiment}, {:author, author} | text |> String.split])
-    %{model | data: markov, trained_on: model.trained_on + 1, messages: [{author, text} | model.messages]}
+    Deutexrium.Influx.LoadCntr.add(:train)
+    %{model |
+      data: markov,
+      trained_on:
+      model.trained_on + 1,
+      messages: [{author, text} | model.messages]
+    }
   end
 
 
@@ -101,7 +108,8 @@ defmodule Deutexrium.Server.Channel do
       reply = cond do
         (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
           Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
-          {:message, {_,_,_}=generate_message(model.data, sentiment)}
+          params = generate_message(model.data, sentiment)
+          {:message, params}
 
         true -> :ok
       end

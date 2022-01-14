@@ -368,6 +368,7 @@ defmodule Deutexrium do
 
   def handle_event({:READY, _, _}) do
     spawn(&presence_updater/0)
+    spawn(&Deutexrium.Influx.Logger.log/0)
     Logger.info("ready")
   end
 

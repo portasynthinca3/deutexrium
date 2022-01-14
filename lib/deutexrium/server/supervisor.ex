@@ -33,19 +33,19 @@ defmodule Deutexrium.Server.Supervisor do
     end
   end
 
+  @spec aggregate(%{any => any}, fun(pid(), %{any => any})) :: %{any => any}
+  defp aggregate(start, fun) do
+    children = DynamicSupervisor.which_children(__MODULE__)
+    values = for {_, pid, :worker, _} <- children do
+      pid |> fun.()
+    end
+    # sum values
+    values |> Enum.reduce(start, &ListUtil.sum_maps/2)
+  end
+
   @spec server_count() :: %{guilds: integer(), channels: integer()}
   def server_count do
-    children = DynamicSupervisor.which_children(__MODULE__)
-    counts = for {_, pid, :worker, _} <- children do
-      pid |> Deutexrium.Server.RqRouter.server_count
-    end
-    # sum counts
-    counts |> Enum.reduce(%{guilds: 0, channels: 0}, fn %{guilds: new_g, channels: new_c}, %{guilds: old_g, channels: old_c} ->
-      %{
-        guilds: old_g + new_g,
-        channels: old_c + new_c
-      }
-    end)
+    aggregate(%{channels: 0, guilds: 0}, &Deutexrium.Server.RqRouter.server_count/1)
   end
 
   @spec shutdown() :: [:ok]

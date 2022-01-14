@@ -14,7 +14,7 @@ defmodule Deutexrium.MixProject do
   def application do
     [
       mod: {Deutexrium.App, []},
-      extra_applications: [:logger]
+      extra_applications: [:logger, :os_mon]
     ]
   end
 
@@ -30,7 +30,9 @@ defmodule Deutexrium.MixProject do
       {:graceful_stop, "~> 0.2.0"},
       {:timex, "~> 3.0"},
       {:veritaserum, "~> 0.2.2"},
-      {:jason, "~> 1.3"}
+      {:jason, "~> 1.3"},
+      {:instream, "~> 1.0"},
+      {:observer_cli, "~> 1.7"}
     ]
   end
 end
