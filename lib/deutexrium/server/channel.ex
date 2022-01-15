@@ -172,7 +172,7 @@ defmodule Deutexrium.Server.Channel do
     Logger.info("channel-#{cid} server: forgetting token")
     {:reply, :ok,
       {id, meta, %{model |
-        data: MarkovTool.forget_token(model.data, token),
+        data: Markov.forget_token(model.data, token),
         forget_operations: [token | model.forget_operations]}, timeout},
     timeout}
   end

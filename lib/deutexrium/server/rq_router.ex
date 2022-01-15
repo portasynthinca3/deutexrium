@@ -1,16 +1,15 @@
-defmodule Deutexrium.Server.RqRouter.State do
-  defstruct guild_pids: %{},
-            channel_pids: %{},
-            ref_receivers: %{},
-            shut_down: false
-end
-
 defmodule Deutexrium.Server.RqRouter do
   use GenServer
   require Logger
   alias ExHashRing.Ring
   alias Deutexrium.Server
-  alias Deutexrium.Server.RqRouter.State
+
+  defmodule State do
+    defstruct guild_pids: %{},
+              channel_pids: %{},
+              ref_receivers: %{},
+              shut_down: false
+  end
 
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg)
@@ -49,7 +48,7 @@ defmodule Deutexrium.Server.RqRouter do
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 60 * 1000)
+    Process.send_after(self(), :cleanup, 2 * 1000)
   end
 
 
