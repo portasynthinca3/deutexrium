@@ -6,7 +6,7 @@ defmodule Deutexrium.Persistence.Model do
   alias Deutexrium.Persistence.Model
 
   @derive Jason.Encoder
-  defstruct data: %Markov{sanitize_tokens: true},
+  defstruct data: %Markov{sanitize_tokens: true, shift: true},
     trained_on: 0, global_trained_on: 0,
     messages: [], forget_operations: []
 
@@ -16,10 +16,12 @@ defmodule Deutexrium.Persistence.Model do
   end
 
   def load!(channel_id) when is_integer(channel_id) do
-    %Model{} |> Map.merge(path(channel_id)
+    model = %Model{} |> Map.merge(path(channel_id)
         |> File.read!
         |> :zlib.gunzip
         |> :erlang.binary_to_term)
+    model |> Map.merge(%{data: model.data
+        |> Map.merge(%{shift: true})})
   end
 
   def dump!(channel_id, %Model{}=data) when is_integer(channel_id) do

@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :deutexrium,
   data_path: "/var/deutex_data",

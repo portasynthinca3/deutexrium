@@ -25,3 +25,4 @@ deutexrium-*.tar
 /.elixir_ls/
 /deuterium.log*
 /bup*.tar*
+build.sh
