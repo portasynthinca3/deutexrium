@@ -516,7 +516,6 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
     unless inter_notice(inter) do
-      channel = :erlang.binary_to_integer(channel)
       {_, _, text} = Server.Channel.generate({channel, inter.guild_id})
       Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
     end
