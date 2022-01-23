@@ -459,11 +459,15 @@ defmodule Deutexrium do
       end
 
       unless count == 0 do
-        text = 1..count
-            |> Enum.map(fn _ -> {_, _, t} = Server.Channel.generate(id)
-                        t end)
-            |> Enum.join("\n")
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+        try do
+          text = 1..count
+              |> Enum.map(fn _ -> {_, _, t} = Server.Channel.generate(id)
+                          t end)
+              |> Enum.join("\n")
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+        rescue
+          _ -> Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **generation failed**"}})
+        end
       else
         Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.yamka.app/commands/gen-less-than-number-greater-than)", flags: 64}})
       end

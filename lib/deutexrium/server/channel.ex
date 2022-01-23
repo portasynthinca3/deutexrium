@@ -26,7 +26,7 @@ defmodule Deutexrium.Server.Channel do
       Deutexrium.Influx.LoadCntr.add(:gen)
       {author, sentiment, text_tokens |> Enum.join(" ")}
     rescue
-      E -> IO.inspect(E); :error
+      _ -> :error
     end
   end
 
