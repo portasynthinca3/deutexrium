@@ -6,11 +6,12 @@ import * as vosk from "vosk";
 import * as prism from "prism-media";
 import S2M from "./s2m";
 import * as md5 from "md5";
+import * as ws from "ws";
 
 import * as voice from "@discordjs/voice";
 import * as discord from "discord.js";
 
-const model = new vosk.Model("./models/en");
+const models = {};
 const client = new discord.Client({
     intents: [
         discord.Intents.FLAGS.GUILDS,
@@ -18,15 +19,21 @@ const client = new discord.Client({
     ]
 });
 
+function loadModel(lang: string) {
+    models[lang] = new vosk.Model(`./models/${lang}`);
+}
+
 type RecCallback = (user: string, text: string) => any;
 
 class Connection {
     channel: discord.VoiceChannel;
     connection: voice.VoiceConnection;
     recognized: RecCallback;
+    lang: string;
 
-    constructor(channel: discord.VoiceChannel, recognized: RecCallback) {
+    constructor(channel: discord.VoiceChannel, lang: string, recognized: RecCallback) {
         // save things and create connection
+        this.lang = lang;
         this.recognized = recognized;
         this.channel = channel;
         this.connection = voice.joinVoiceChannel({
@@ -51,7 +58,7 @@ class Connection {
 
                 // decode opus stream and recognize their speech
                 const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
-                const rec = new vosk.Recognizer({ model, sampleRate: 48000 });
+                const rec = new vosk.Recognizer({ model: models[lang], sampleRate: 48000 });
                 stream.pipe(decoder).pipe(new S2M()).on("data", (chunk) => {
                     rec.acceptWaveform(chunk);
                 }).on("end", () => {
@@ -69,11 +76,11 @@ class Connection {
     say(text: string) {
         const path = `/tmp/${md5(text)}.mp3`;
         // call gtts
-        new gtts(text, "en").save(path, () => {
+        new gtts(text, this.lang).save(path, () => {
             const player = voice.createAudioPlayer();
             player.play(voice.createAudioResource(path));
             this.connection.subscribe(player);
-            
+
             // remove audio file after playing it
             player.on(voice.AudioPlayerStatus.Idle, () => {
                 fs.rmSync(path);
@@ -84,6 +91,37 @@ class Connection {
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
+
+    const server = new ws.Server({ port: parseInt(process.env.PORT ?? "2700") });
+    server.on("connection", (socket) => {
+        console.log("Got connection");
+        let conn: Connection = null;
+
+        socket.on("message", (msg) => {
+            const data = JSON.parse(msg.toString());
+            if(data.op === "connect") {
+                // connect to voice channel
+                const chan = client.channels.cache.find(x => x.id === data.id) as discord.VoiceChannel;
+                conn = new Connection(chan, data.lang, (user, text) => {
+                    // send event when something got said
+                    socket.send(JSON.stringify({
+                        op: "recognized",
+                        user, text
+                    }));
+                });
+            } else if(data.op === "say") {
+                // say something in vc
+                conn.say(data.text);
+            } else if(data.op === "disconnect") {
+                // disconnect from vc
+                conn.destroy();
+            }
+        }).on("close", () => {
+            conn.destroy();
+            console.log("Connection closed");
+        });
+    });
 });
 
+loadModel("en");
 client.login(process.env.DEUTEX_TOKEN);
