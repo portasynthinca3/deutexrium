@@ -4,7 +4,7 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "0.3.6",
+      version: "0.4.1",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -14,13 +14,13 @@ defmodule Deutexrium.MixProject do
   def application do
     [
       mod: {Deutexrium.App, []},
-      extra_applications: [:logger, :os_mon]
+      extra_applications: [:logger, :os_mon, :gun]
     ]
   end
 
   defp deps do
     [
-      # {:gun, github: "ninenines/gun", override: true}, # specific version required by nostrum
+      {:gun, "~> 2.0", hex: :remedy_gun},
       {:nostrum, github: "kraigie/nostrum", ref: "master"},
       # {:nostrum, "~> 0.5.0-rc1"},
       {:logger_file_backend, "~> 0.0.13"},

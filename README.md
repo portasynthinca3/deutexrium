@@ -15,7 +15,12 @@ Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Disc
   - install InfluxDB v1.x and create a database named `deuterium`, it will be used to store stats
   - (optionally) install and configure Grafana to look at those stats
   - run `mix deps.get`
-  - tweak self-explanatory settings in `config/config.exs` (optional)
+  - tweak self-explanatory settings in `config/config.exs`
+
+Additional setup for voice channel learning and speaking:
+  - install Node and npm
+  - run `cd voice && npm i && cd ..`
+  - 
 
 ### Running
 Something like `DEUTEX_TOKEN=... iex -S mix`
@@ -24,4 +29,5 @@ Something like `DEUTEX_TOKEN=... iex -S mix`
 If you own a Discord server that you'd like to be served by a self-hosted instance of this bot and you have used this one before, you have the option of importing existing data. To do that, run the `/export` command of the master instance for both resource types (`channel` and `guild`). The three files you received should be placed in the `/var/deutex_data` directory on the machine that hosts your Deuterium instance (unless that path was changed in `config/config.exs`)
 
 ## Modification
-If you're familiar with Elixir and OTP, take a look inside `/supervision_tree.txt` to learn more about its internal structure
+This internal structure diagram might be helpful:\
+![Internal structure](structure.png)

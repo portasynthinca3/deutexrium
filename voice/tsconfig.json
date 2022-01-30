@@ -1,0 +1,13 @@
+{
+    "include": ["./src/*.ts"],
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "incremental": true,
+
+        "module": "commonjs",
+        "target": "es5",
+        "moduleResolution": "node",
+
+        "allowSyntheticDefaultImports": true
+    }
+}

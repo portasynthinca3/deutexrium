@@ -108,9 +108,11 @@ defmodule Deutexrium.Influx.Logger do
 
   def log do
     interval = Application.fetch_env!(:deutexrium, :log_interval)
-    receive do after interval ->
-      write()
-      log()
+    unless interval == 0 do
+      receive do after interval ->
+        write()
+        log()
+      end
     end
   end
 end
