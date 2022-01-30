@@ -1,7 +1,6 @@
-// Stereo to mono transform stream
-
 import * as stream from "stream";
 
+// Stereo to mono transform stream
 export default class StereoToMono extends stream.Transform {
     override _transform(chunk, enc, cb) {
         // LLRRLLRR    LLLL

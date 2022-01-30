@@ -10,14 +10,13 @@ import * as md5 from "md5";
 import * as voice from "@discordjs/voice";
 import * as discord from "discord.js";
 
+const model = new vosk.Model("./models/en");
 const client = new discord.Client({
     intents: [
         discord.Intents.FLAGS.GUILDS,
         discord.Intents.FLAGS.GUILD_VOICE_STATES,
     ]
 });
-
-const model = new vosk.Model("./models/en");
 
 type RecCallback = (user: string, text: string) => any;
 
@@ -27,6 +26,7 @@ class Connection {
     recognized: RecCallback;
 
     constructor(channel: discord.VoiceChannel, recognized: RecCallback) {
+        // save things and create connection
         this.recognized = recognized;
         this.channel = channel;
         this.connection = voice.joinVoiceChannel({
@@ -37,8 +37,10 @@ class Connection {
             selfMute: false
         });
 
+        // start receiving when ready
         this.connection.on(voice.VoiceConnectionStatus.Ready, () => {
             const receiver = this.connection.receiver;
+            // when somebody starts talking
             receiver.speaking.on("start", (user) => {
                 const stream = receiver.subscribe(user, {
                     end: {
@@ -47,6 +49,7 @@ class Connection {
                     }
                 });
 
+                // decode opus stream and recognize their speech
                 const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
                 const rec = new vosk.Recognizer({ model, sampleRate: 48000 });
                 stream.pipe(decoder).pipe(new S2M()).on("data", (chunk) => {
@@ -65,11 +68,13 @@ class Connection {
 
     say(text: string) {
         const path = `/tmp/${md5(text)}.mp3`;
+        // call gtts
         new gtts(text, "en").save(path, () => {
             const player = voice.createAudioPlayer();
             player.play(voice.createAudioResource(path));
             this.connection.subscribe(player);
-
+            
+            // remove audio file after playing it
             player.on(voice.AudioPlayerStatus.Idle, () => {
                 fs.rmSync(path);
             });
