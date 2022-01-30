@@ -20,7 +20,7 @@ Elixir [Deuterium](https://github.com/portasynthinca3/deuterium) rewrite, a Disc
 Additional setup for voice channel learning and speaking:
   - install Node and npm
   - run `cd voice && npm i && cd ..`
-  - 
+  - install `ffmpeg` from your system package manager
 
 ### Running
 Something like `DEUTEX_TOKEN=... iex -S mix`
