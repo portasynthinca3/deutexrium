@@ -164,6 +164,19 @@ defmodule Deutexrium do
     } | commands]
 
     commands = [%{
+      name: "join",
+      description: "joins a voice channel",
+      options: [
+        %{
+          type: 7, # channel
+          name: "channel",
+          description: "the channel to join",
+          required: true
+        }
+      ]
+    } | commands]
+
+    commands = [%{
       name: "search",
       description: "search for a word in the model",
       options: [
@@ -518,6 +531,15 @@ defmodule Deutexrium do
     unless inter_notice(inter) do
       {_, _, text} = Server.Channel.generate({channel, inter.guild_id})
       Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    end
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "join", options: [%{name: "channel", value: channel}]}}=inter, _}) do
+    unless inter_notice(inter) do
+      Server.Voice.join({channel, inter.guild_id})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **joined** <##{channel}>", flags: 64}})
     end
   end
 

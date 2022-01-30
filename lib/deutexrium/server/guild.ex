@@ -19,7 +19,7 @@ defmodule Deutexrium.Server.Guild do
     Logger.info("guild-#{id} server: loaded")
 
     timeout = Application.fetch_env!(:deutexrium, :guild_unload_timeout)
-    {:ok, {id, meta, timeout}}
+    {:ok, {id, meta, timeout}, timeout}
   end
 
   @impl true

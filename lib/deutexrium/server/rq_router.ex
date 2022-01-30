@@ -7,6 +7,7 @@ defmodule Deutexrium.Server.RqRouter do
   defmodule State do
     defstruct guild_pids: %{},
               channel_pids: %{},
+              voice_pids: %{},
               ref_receivers: %{},
               shut_down: false
   end
@@ -19,6 +20,7 @@ defmodule Deutexrium.Server.RqRouter do
     module = case type do
       :guild -> Server.Guild
       :channel -> Server.Channel
+      :voice -> Server.Voice
     end
 
     case map |> Map.get(id) do
@@ -48,7 +50,7 @@ defmodule Deutexrium.Server.RqRouter do
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 2 * 1000)
+    Process.send_after(self(), :cleanup, 10 * 1000)
   end
 
 
@@ -66,7 +68,6 @@ defmodule Deutexrium.Server.RqRouter do
       ref_receivers: state.ref_receivers |> Map.put(ref, from)
     }}
   end
-
   @impl true
   def handle_call({:route, {:channel, _}=target, rq}, from, %State{}=state) when not state.shut_down do
     {channel_pids, ref} = forward_request(state.channel_pids, target, rq)
@@ -75,12 +76,21 @@ defmodule Deutexrium.Server.RqRouter do
       ref_receivers: state.ref_receivers |> Map.put(ref, from)
     }}
   end
+  @impl true
+  def handle_call({:route, {:voice, _}=target, rq}, from, %State{}=state) when not state.shut_down do
+    {voice_pids, ref} = forward_request(state.voice_pids, target, rq)
+    {:noreply, %{state |
+      voice_pids: voice_pids,
+      ref_receivers: state.ref_receivers |> Map.put(ref, from)
+    }}
+  end
 
   @impl true
   def handle_call(:server_count, _from, %State{}=state) do
     {:reply, %{
       guilds: map_size(state.guild_pids),
-      channels: map_size(state.channel_pids)
+      channels: map_size(state.channel_pids),
+      voice: map_size(state.voice_pids)
     }, state}
   end
 
@@ -98,6 +108,7 @@ defmodule Deutexrium.Server.RqRouter do
     state_field = case type do
       :guild -> :guild_pids
       :channel -> :channel_pids
+      :voice -> :voice_pids
     end
     map = state |> Map.get(state_field)
     case map |> Map.get(id) do
@@ -131,14 +142,15 @@ defmodule Deutexrium.Server.RqRouter do
     schedule_cleanup()
     {:noreply, %{state |
       guild_pids: state.guild_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{}),
-      channel_pids: state.channel_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{})
+      channel_pids: state.channel_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{}),
+      voice_pids: state.voice_pids |> Enum.filter(fn {_, v} -> v |> Process.alive? end) |> Enum.into(%{})
     }}
   end
 
   # ==== API =====
 
   @spec route({:channel|:guild, integer() | {integer(), integer()}}, any()) :: any()
-  def route({type, _}=target, rq) when type == :channel or type == :guild do
+  def route({type, _}=target, rq) when type == :channel or type == :guild or type == :voice do
     router_pid(target) |> GenServer.call({:route, target, rq})
   end
 
@@ -150,6 +162,11 @@ defmodule Deutexrium.Server.RqRouter do
   @spec route_to_chan({integer(), integer()}, any()) :: any()
   def route_to_chan({cid, gid}=id, rq) when is_integer(cid) and is_integer(gid) do
     route({:channel, id}, rq)
+  end
+
+  @spec route_to_chan({integer(), integer()}, any()) :: any()
+  def route_to_voice({cid, gid}=id, rq) when is_integer(cid) and is_integer(gid) do
+    route({:voice, id}, rq)
   end
 
   @spec server_count(pid()) :: %{guilds: integer(), channels: integer()}
