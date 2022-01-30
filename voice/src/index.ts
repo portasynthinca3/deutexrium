@@ -20,7 +20,7 @@ const client = new discord.Client({
 });
 
 function loadModel(lang: string) {
-    models[lang] = new vosk.Model(`./models/${lang}`);
+    models[lang] = new vosk.Model(`${process.argv[1]}/models/${lang}`);
 }
 
 type RecCallback = (user: string, text: string) => any;
