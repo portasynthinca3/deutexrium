@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
+import { EventEmitter } from "events";
 
 import * as gtts from "gtts";
 import * as vosk from "vosk";
@@ -7,6 +8,7 @@ import * as prism from "prism-media";
 import S2M from "./s2m";
 import * as md5 from "md5";
 import * as ws from "ws";
+import { nanoid } from "nanoid";
 
 import * as voice from "@discordjs/voice";
 import * as discord from "discord.js";
@@ -23,18 +25,17 @@ function loadModel(lang: string) {
     models[lang] = new vosk.Model(`${process.argv[1]}/models/${lang}`);
 }
 
-type RecCallback = (user: string, text: string) => any;
+type Alternatives = { confidence: number, text: string }[];
 
-class Connection {
+class Connection extends EventEmitter {
     channel: discord.VoiceChannel;
     connection: voice.VoiceConnection;
-    recognized: RecCallback;
     lang: string;
 
-    constructor(channel: discord.VoiceChannel, lang: string, recognized: RecCallback) {
+    constructor(channel: discord.VoiceChannel, lang: string) {
+        super();
         // save things and create connection
         this.lang = lang;
-        this.recognized = recognized;
         this.channel = channel;
         this.connection = voice.joinVoiceChannel({
             channelId: channel.id,
@@ -42,6 +43,10 @@ class Connection {
             adapterCreator: channel.guild.voiceAdapterCreator,
             selfDeaf: false,
             selfMute: false
+        });
+
+        this.connection.on(voice.VoiceConnectionStatus.Disconnected, () => {
+            this.emit("disconnected");
         });
 
         // start receiving when ready
@@ -59,10 +64,14 @@ class Connection {
                 // decode opus stream and recognize their speech
                 const decoder = new prism.opus.Decoder({ channels: 2, rate: 48000, frameSize: 960 });
                 const rec = new vosk.Recognizer({ model: models[lang], sampleRate: 48000 });
+                rec.setMaxAlternatives(10);
                 stream.pipe(decoder).pipe(new S2M()).on("data", (chunk) => {
                     rec.acceptWaveform(chunk);
                 }).on("end", () => {
-                    this.recognized(user, rec.result().text);
+                    let { alternatives } = rec.finalResult() as { alternatives: Alternatives };
+                    alternatives = alternatives.map((a) => ({ ...a, text: a.text.trim() })); // trim
+                    const text = alternatives.reduce((a, b) => a.confidence > b.confidence ? a : b).text;
+                    this.emit("recognized", { user, result: { text, alternatives } });
                     rec.free();
                 });
             });
@@ -74,17 +83,20 @@ class Connection {
     }
 
     say(text: string) {
-        const path = `/tmp/${md5(text)}.mp3`;
+        const path = `/tmp/${nanoid(10)}.mp3`;
         // call gtts
-        new gtts(text, this.lang).save(path, () => {
-            const player = voice.createAudioPlayer();
-            player.play(voice.createAudioResource(path));
-            this.connection.subscribe(player);
-
-            // remove audio file after playing it
-            player.on(voice.AudioPlayerStatus.Idle, () => {
-                fs.rmSync(path);
-            });
+        new gtts(text, this.lang).save(path, (err) => {
+            if(err) return;
+            setTimeout(() => {
+                const player = voice.createAudioPlayer();
+                player.play(voice.createAudioResource(path));
+                this.connection.subscribe(player);
+    
+                // remove audio file after playing it
+                player.on(voice.AudioPlayerStatus.Idle, () => {
+                    fs.rmSync(path);
+                });
+            }, 500);
         });
     }
 }
@@ -102,26 +114,33 @@ client.on("ready", () => {
             if(data.op === "connect") {
                 // connect to voice channel
                 const chan = client.channels.cache.find(x => x.id === data.id) as discord.VoiceChannel;
-                conn = new Connection(chan, data.lang, (user, text) => {
+                conn = new Connection(chan, data.lang);
+                conn.on("recognized", ({ user, result }) => {
                     // send event when something got said
                     socket.send(JSON.stringify({
                         op: "recognized",
-                        user, text
+                        user, result
                     }));
+                }).on("disconnected", () => {
+                    socket.send(JSON.stringify({
+                        op: "disconnected"
+                    }));
+                    socket.close();
                 });
             } else if(data.op === "say") {
                 // say something in vc
                 conn.say(data.text);
             } else if(data.op === "disconnect") {
                 // disconnect from vc
-                conn.destroy();
+                if(conn) conn.destroy();
             }
         }).on("close", () => {
-            conn.destroy();
+            if(conn) conn.destroy();
             console.log("Connection closed");
         });
     });
 });
 
 loadModel("en");
+loadModel("ru");
 client.login(process.env.DEUTEX_TOKEN);
