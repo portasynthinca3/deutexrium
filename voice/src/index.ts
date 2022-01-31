@@ -83,7 +83,8 @@ class Connection extends EventEmitter {
     }
 
     destroy() {
-        this.connection.destroy();
+        if(this.connection.state.status !== voice.VoiceConnectionStatus.Destroyed)
+            this.connection.destroy();
     }
 
     say(text: string) {
@@ -116,29 +117,33 @@ client.on("ready", () => {
         let conn: Connection = null;
 
         socket.on("message", (msg) => {
-            const data = JSON.parse(msg.toString());
-            if(data.op === "connect") {
-                // connect to voice channel
-                const chan = client.channels.cache.find(x => x.id === data.id) as discord.VoiceChannel;
-                conn = new Connection(chan, data.lang);
-                conn.on("recognized", ({ user, result }) => {
-                    // send event when something got said
-                    socket.send(JSON.stringify({
-                        op: "recognized",
-                        user, result
-                    }));
-                }).on("disconnected", () => {
-                    socket.send(JSON.stringify({
-                        op: "disconnected"
-                    }));
-                    socket.close();
-                });
-            } else if(data.op === "say") {
-                // say something in vc
-                conn.say(data.text);
-            } else if(data.op === "disconnect") {
-                // disconnect from vc
-                if(conn) conn.destroy();
+            try {
+                const data = JSON.parse(msg.toString());
+                if(data.op === "connect") {
+                    // connect to voice channel
+                    const chan = client.channels.cache.find(x => x.id === data.id) as discord.VoiceChannel;
+                    conn = new Connection(chan, data.lang);
+                    conn.on("recognized", ({ user, result }) => {
+                        // send event when something got said
+                        socket.send(JSON.stringify({
+                            op: "recognized",
+                            user, result
+                        }));
+                    }).on("disconnected", () => {
+                        socket.send(JSON.stringify({
+                            op: "disconnected"
+                        }));
+                        socket.close();
+                    });
+                } else if(data.op === "say") {
+                    // say something in vc
+                    conn.say(data.text);
+                } else if(data.op === "disconnect") {
+                    // disconnect from vc
+                    if(conn) conn.destroy();
+                }
+            } catch(err) {
+                console.error(err);
             }
         }).on("close", () => {
             if(conn) conn.destroy();

@@ -253,7 +253,7 @@ defmodule Deutexrium do
         |> put_field("privacy", ":lock: my privacy policy", true)
         |> put_field("support", ":thinking: ways to get support", true)
         |> put_field("scoreboard", ":100: top-10 most active users in this server", true)
-        # |> put_field("rps", ":rock: start a game of Rock-Paper-Scissors with me", true)
+        |> put_field("join", ":loud_sound: join a voice channel", true)
 
         |> put_field("ADMIN COMMANDS", "can only be run by those with the \"administrator\" privilege")
         |> put_field("turn server <setting> <on/off>", ":gear: turn a binary setting on or off server-wide", true)

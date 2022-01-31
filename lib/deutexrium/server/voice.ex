@@ -27,6 +27,9 @@ defmodule Deutexrium.Server.Voice do
       {:gun_upgrade, ^conn, ^stream, _, _} -> :ok
     end
 
+    # set generation rate to 3
+    Deutexrium.Server.Channel.set(id, :autogen_rate, 3)
+
     timeout = Application.fetch_env!(:deutexrium, :channel_unload_timeout)
     {:ok, {id, timeout, {conn, stream}}, timeout}
   end
@@ -45,7 +48,10 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info(:timeout, _) do
+  def handle_info(:timeout, {_, _, {conn, stream}}) do
+    :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
+      op: "disconnect"
+    })})
     exit(:normal)
   end
 
@@ -95,14 +101,11 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info(rq, state={_, timeout, _}) do
-    IO.inspect(rq)
+  def handle_info(_, state={_, timeout, _}) do
     {:noreply, state, timeout}
   end
 
-
   # ===== API =====
-
 
   @type server_id() :: {integer(), integer()}
 
