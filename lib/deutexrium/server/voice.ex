@@ -3,25 +3,44 @@ defmodule Deutexrium.Server.Voice do
   require Logger
   alias Deutexrium.Server.{RqRouter, Channel}
 
+  @trggers [
+    "slash say",
+    "slash generate",
+    "бот скажи",
+    "вот скажи",
+  ]
+  defp is_trigger(alts), do:
+    alts |> Enum.any?(fn %{"text" => text} -> text in @trggers end)
+
   @impl true
-  def init(id={chan, _}) do
-    # create websocket connection to Node voice server
+  def init(id) do
+    # create http connection
     {host, port} = Application.fetch_env!(:deutexrium, :node_voice_server)
     {:ok, conn} = :gun.open(host, port)
-    stream = :gun.ws_upgrade(conn, "/")
-    # tell it the channel id
-    :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
-      op: "connect",
-      lang: "ru",
-      id: "#{chan}"
-    })})
+    receive do
+      {:gun_up, ^conn, _} -> :ok
+    end
 
-    timeout = Application.fetch_env!(:deutexrium, :guild_unload_timeout)
+    # upgrade to websocket
+    stream = :gun.ws_upgrade(conn, "/")
+    receive do
+      {:gun_upgrade, ^conn, ^stream, _, _} -> :ok
+    end
+
+    timeout = Application.fetch_env!(:deutexrium, :channel_unload_timeout)
     {:ok, {id, timeout, {conn, stream}}, timeout}
   end
 
   @impl true
-  def handle_call(:join, _, state={_, timeout, _}) do
+  def handle_call({:join, lang}, _, state={{chan, _}, timeout, {conn, stream}}) do
+    # tell it the channel id
+    :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
+      op: "connect",
+      lang: lang,
+      id: "#{chan}"
+    })})
+    Logger.info("connected to vc")
+
     {:reply, :ok, state, timeout}
   end
 
@@ -32,24 +51,37 @@ defmodule Deutexrium.Server.Voice do
 
   @impl true
   def handle_info({:gun_ws, _, _, {:text, json}}, state={id, timeout, _}) do
-    data = Jason.decode!(json) |> Enum.into(%{})
-    if data |> Map.get("op") == "recognized" do
-      text = data |> Map.get("text") |> IO.inspect
-      unless text == "" do
-        if text in ["slash say", "slash generate", "бот скажи", "вот скажи"] do
-          # if text is "/say" or "/generate, don't train
-          {_, _, text} = Channel.generate(id)
-          send(self(), {:say, text})
-        else
-          user = data |> Map.get("user") |> :erlang.binary_to_integer
-          case Channel.handle_message(id, text, false, user) do
-            :ok -> :ok
-            {:message, {_, _, text}} -> send(self(), {:say, text})
+    %{"op" => op} = data = Jason.decode!(json) |> Enum.into(%{})
+
+    case op do
+      "recognized" ->
+        text = data |> Map.get("result") |> Map.get("text") |> IO.inspect
+        alternatives = data |> Map.get("result") |> Map.get("alternatives") |> IO.inspect
+
+        # process text
+        unless text == "" do
+          if is_trigger(alternatives) do
+            # if text is a trigger
+            {_, _, text} = Channel.generate(id)
+            send(self(), {:say, text})
+          else
+            user = data |> Map.get("user") |> :erlang.binary_to_integer
+            case Channel.handle_message(id, text, false, user) do
+              :ok -> :ok
+              {:message, {_, _, text}} -> send(self(), {:say, text})
+            end
           end
         end
-      end
+        {:noreply, state, timeout}
+
+      "disconnected" ->
+        {:stop, :voice_down, state}
     end
-    {:noreply, state, timeout}
+  end
+
+  @impl true
+  def handle_info({:gun_down, _, _, :closed, _}, state) do
+    {:stop, :voice_down, state}
   end
 
   @impl true
@@ -62,7 +94,8 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info(_, state={_, timeout, _}) do
+  def handle_info(rq, state={_, timeout, _}) do
+    IO.inspect(rq)
     {:noreply, state, timeout}
   end
 
@@ -72,8 +105,8 @@ defmodule Deutexrium.Server.Voice do
 
   @type server_id() :: {integer(), integer()}
 
-  @spec join(server_id()) :: :ok
-  def join(id) when (is_integer(id) or is_tuple(id)) do
-    id |> RqRouter.route_to_voice(:join)
+  @spec join(server_id(), String.t()) :: :ok
+  def join(id, lang) when (is_integer(id) or is_tuple(id)) and is_binary(lang) do
+    id |> RqRouter.route_to_voice({:join, lang})
   end
 end
