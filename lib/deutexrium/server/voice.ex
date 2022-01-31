@@ -39,7 +39,7 @@ defmodule Deutexrium.Server.Voice do
       lang: lang,
       id: "#{chan}"
     })})
-    Logger.info("connected to vc")
+    Logger.info("voice-#{chan}: connected to vc")
 
     {:reply, :ok, state, timeout}
   end
@@ -50,19 +50,20 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info({:gun_ws, _, _, {:text, json}}, state={id, timeout, _}) do
+  def handle_info({:gun_ws, _, _, {:text, json}}, state={id={chan, _}, timeout, _}) do
     %{"op" => op} = data = Jason.decode!(json) |> Enum.into(%{})
 
     case op do
       "recognized" ->
-        text = data |> Map.get("result") |> Map.get("text") |> IO.inspect
-        alternatives = data |> Map.get("result") |> Map.get("alternatives") |> IO.inspect
+        text = data |> Map.get("result") |> Map.get("text")
+        alternatives = data |> Map.get("result") |> Map.get("alternatives")
 
         # process text
         unless text == "" do
           if is_trigger(alternatives) do
             # if text is a trigger
             {_, _, text} = Channel.generate(id)
+            Logger.info("voice-#{chan}: trigger seq")
             send(self(), {:say, text})
           else
             user = data |> Map.get("user") |> :erlang.binary_to_integer
