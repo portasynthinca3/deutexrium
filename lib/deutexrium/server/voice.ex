@@ -27,8 +27,8 @@ defmodule Deutexrium.Server.Voice do
       {:gun_upgrade, ^conn, ^stream, _, _} -> :ok
     end
 
-    # set generation rate to 3
-    Deutexrium.Server.Channel.set(id, :autogen_rate, 3)
+    # set generation rate
+    Deutexrium.Server.Channel.set(id, :autogen_rate, 15)
 
     timeout = Application.fetch_env!(:deutexrium, :channel_unload_timeout)
     {:ok, {id, timeout, {conn, stream}}, timeout}
