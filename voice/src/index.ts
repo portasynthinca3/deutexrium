@@ -83,20 +83,22 @@ class Connection extends EventEmitter {
     }
 
     say(text: string) {
+        if(!text) return;
+
         const path = `/tmp/${nanoid(10)}.mp3`;
         // call gtts
         new gtts(text, this.lang).save(path, (err) => {
             if(err) return;
-            setTimeout(() => {
-                const player = voice.createAudioPlayer();
-                player.play(voice.createAudioResource(path));
-                this.connection.subscribe(player);
-    
-                // remove audio file after playing it
-                player.on(voice.AudioPlayerStatus.Idle, () => {
-                    fs.rmSync(path);
-                });
-            }, 500);
+            if(!fs.existsSync(path)) return;
+
+            const player = voice.createAudioPlayer();
+            player.play(voice.createAudioResource(path));
+            this.connection.subscribe(player);
+
+            // remove audio file after playing it
+            player.on(voice.AudioPlayerStatus.Idle, () => {
+                fs.rmSync(path);
+            });
         });
     }
 }
