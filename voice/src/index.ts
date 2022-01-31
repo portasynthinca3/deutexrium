@@ -68,11 +68,15 @@ class Connection extends EventEmitter {
                 stream.pipe(decoder).pipe(new S2M()).on("data", (chunk) => {
                     rec.acceptWaveform(chunk);
                 }).on("end", () => {
+                    // extract text from alternatives
                     let { alternatives } = rec.finalResult() as { alternatives: Alternatives };
                     alternatives = alternatives.map((a) => ({ ...a, text: a.text.trim() })); // trim
                     const text = alternatives.reduce((a, b) => a.confidence > b.confidence ? a : b).text;
+                    // emit event
                     this.emit("recognized", { user, result: { text, alternatives } });
+                    // cleanup
                     rec.free();
+                    stream.destroy();
                 });
             });
         });
