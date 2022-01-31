@@ -21,6 +21,7 @@ Additional setup for voice channel learning and speaking:
   - install Node and npm
   - run `cd voice && npm i && cd ..`
   - install `ffmpeg` from your system package manager
+  - download `en` and `ru` models from [here](https://alphacephei.com/vosk/models), unpack them into `voice/models`
 
 ### Running
 Something like `DEUTEX_TOKEN=... iex -S mix`
