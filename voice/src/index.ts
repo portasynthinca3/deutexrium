@@ -2,11 +2,10 @@ import * as path from "path";
 import * as fs from "fs";
 import { EventEmitter } from "events";
 
-import * as gtts from "gtts";
 import * as vosk from "vosk";
 import * as prism from "prism-media";
-import S2M from "./s2m";
-import * as md5 from "md5";
+import S2M from "./s2m.js";
+import say from "./tts.js";
 import * as ws from "ws";
 import { nanoid } from "nanoid";
 
@@ -92,8 +91,7 @@ class Connection extends EventEmitter {
 
         const path = `/tmp/${nanoid(10)}.mp3`;
         // call gtts
-        new gtts(text, this.lang).save(path, (err) => {
-            if(err) return;
+        say(text, this.lang, path, () => {
             if(!fs.existsSync(path)) return;
 
             const player = voice.createAudioPlayer();
@@ -111,7 +109,7 @@ class Connection extends EventEmitter {
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 
-    const server = new ws.Server({ port: parseInt(process.env.PORT ?? "2700") });
+    const server = new ws.WebSocketServer({ port: parseInt(process.env.PORT ?? "2700") });
     server.on("connection", (socket) => {
         console.log("Got connection");
         let conn: Connection = null;
