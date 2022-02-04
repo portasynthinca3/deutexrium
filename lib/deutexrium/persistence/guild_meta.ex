@@ -1,4 +1,8 @@
 defmodule Deutexrium.Persistence.GuildMeta do
+  @moduledoc """
+  Guild data serialization
+  """
+
   @derive Jason.Encoder
   defstruct train: true,
     global_train: false,

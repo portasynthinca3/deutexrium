@@ -1,4 +1,8 @@
 defmodule ListUtil do
+  @moduledoc """
+  Collection handling utilities
+  """
+
   @spec ttuples(list()) :: list()
   def ttuples(list) do
     first_elements = list |> Enum.reverse |> tl() |> tl() |> Enum.reverse

@@ -1,4 +1,8 @@
 defmodule MarkovTool do
+  @moduledoc """
+  Functions for manipulating Markov models not provided by the library
+  """
+
   def token_stats(%Markov{}=model) do
     model.links |> Enum.reduce(%{}, fn {_, possibilities}, acc ->
       possibilities |> Enum.reduce(acc, fn {tok, prob}, acc2 ->

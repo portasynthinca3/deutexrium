@@ -2,6 +2,10 @@ require Protocol
 Protocol.derive(Jason.Encoder, Markov)
 
 defmodule Deutexrium.Persistence.Model do
+  @moduledoc """
+  Markov model serialization
+  """
+
   require Logger
   alias Deutexrium.Persistence.Model
 

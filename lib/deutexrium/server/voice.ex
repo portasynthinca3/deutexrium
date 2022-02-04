@@ -1,4 +1,10 @@
 defmodule Deutexrium.Server.Voice do
+  @moduledoc """
+  Communicates with the Node Voice Server:
+    - gets recognized sentences from it
+    - asks it to say things
+  """
+
   use GenServer
   require Logger
   alias Deutexrium.Server.{RqRouter, Channel}

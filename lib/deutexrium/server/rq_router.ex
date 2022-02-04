@@ -1,4 +1,9 @@
 defmodule Deutexrium.Server.RqRouter do
+  @moduledoc """
+  Routes requests and responses between Channel, Guild and Voice servers and
+  Nostrum event handlers
+  """
+
   use GenServer
   require Logger
   alias ExHashRing.Ring

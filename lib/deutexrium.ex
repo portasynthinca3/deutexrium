@@ -1,4 +1,9 @@
 defmodule Deutexrium do
+  @moduledoc """
+  Accepts data from Nostrum and invokes Channel, Guild and Voice servers'
+  functions accordingly.
+  """
+
   use Nostrum.Consumer
   require Logger
   alias Nostrum.Api
@@ -367,7 +372,7 @@ defmodule Deutexrium do
     {uptime, _} = :erlang.statistics(:wall_clock)
     uptime = uptime |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
     been_created_for = ((DateTime.utc_now() |> DateTime.to_unix(:millisecond)) - (Nostrum.Cache.Me.get().id
-        |> Bitwise.>>>(22) |> Kernel.+(1420070400000)))
+        |> Bitwise.>>>(22) |> Kernel.+(1_420_070_400_000)))
         |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
 
     embed = %Struct.Embed{}

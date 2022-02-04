@@ -1,4 +1,8 @@
 defmodule Ctl do
+  @moduledoc """
+  Admin functions meant to be executed from the shell
+  """
+
   alias Nostrum.Api
 
   def shutdown do

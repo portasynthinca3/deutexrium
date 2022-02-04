@@ -1,4 +1,9 @@
 defmodule Deutexrium.Server.Channel do
+  @moduledoc """
+  Keeps track of channel data and settings, as well as manages generation
+  and training of the associated Markov model
+  """
+
   use GenServer
   require Logger
   alias Deutexrium.Persistence.{Meta, Model}

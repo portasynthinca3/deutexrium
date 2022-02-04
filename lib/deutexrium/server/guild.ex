@@ -1,4 +1,8 @@
 defmodule Deutexrium.Server.Guild do
+  @moduledoc """
+  Keeps track of guild data and settings
+  """
+
   use GenServer
   require Logger
   alias Deutexrium.Persistence.GuildMeta

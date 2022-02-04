@@ -32,7 +32,8 @@ defmodule Deutexrium.MixProject do
       {:veritaserum, "~> 0.2.2"},
       {:jason, "~> 1.3"},
       {:instream, "~> 1.0"},
-      {:observer_cli, "~> 1.7"}
+      {:observer_cli, "~> 1.7"},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 end

@@ -1,4 +1,8 @@
 defmodule Deutexrium.App do
+  @moduledoc """
+  Deutexrium OTP app
+  """
+
   use Application
 
   @impl true

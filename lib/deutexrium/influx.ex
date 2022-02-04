@@ -1,7 +1,14 @@
 defmodule Deutexrium.Influx do
+  @moduledoc """
+  Manages InfluxDB logging
+  """
+
   use Instream.Connection, otp_app: :deutexrium
 
   defmodule Series do
+    @moduledoc """
+    Hosts submodules describing data points
+    """
     defmodule Cpu do
       use Instream.Series
       series do
@@ -70,6 +77,10 @@ defmodule Deutexrium.Influx do
 end
 
 defmodule Deutexrium.Influx.Logger do
+  @moduledoc """
+  Logs usage stats to InfluxDB
+  """
+
   alias Deutexrium.Influx.Series
   require Logger
 
@@ -118,6 +129,10 @@ defmodule Deutexrium.Influx.Logger do
 end
 
 defmodule Deutexrium.Influx.LoadCntr do
+  @moduledoc """
+  Shared load counter
+  """
+
   use GenServer
   require Logger
 

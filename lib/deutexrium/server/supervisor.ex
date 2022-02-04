@@ -1,4 +1,8 @@
 defmodule Deutexrium.Server.Supervisor do
+  @moduledoc """
+  Supervises request routers
+  """
+
   use DynamicSupervisor
   require Logger
   alias ExHashRing.Ring

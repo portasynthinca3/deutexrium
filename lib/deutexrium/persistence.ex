@@ -1,4 +1,8 @@
 defmodule Deutexrium.Persistence do
+  @moduledoc """
+  Serialization umbrella functions
+  """
+
   def used_space do
     path = Application.fetch_env!(:deutexrium, :data_path)
     File.ls!(path) |> Enum.reduce(0, fn file, acc ->

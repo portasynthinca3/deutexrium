@@ -1,4 +1,8 @@
 defmodule Deutexrium.Sup do
+  @moduledoc """
+  Main supervisor
+  """
+
   use Supervisor
   require Logger
 

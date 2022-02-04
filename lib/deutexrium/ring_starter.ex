@@ -1,4 +1,9 @@
 defmodule Deutexrium.RingStarter do
+  @moduledoc """
+  Starts the hash ring that determines which Channel/Guild/Voice servers get
+  assigned to which request routers
+  """
+
   use GenServer
   require Logger
   alias ExHashRing.Ring

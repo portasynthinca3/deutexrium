@@ -1,4 +1,8 @@
 defmodule Sentiment do
+  @moduledoc """
+  Veritaserum wrapper for fitting sentiments into 5 major categories
+  """
+
   @type sentiment() :: :nosentiment | :strongly_negative | :negative | :neutral | :positive | :strongly_positive
   defguard is_sentiment(atom) when atom == :nosentiment
     or atom == :strongly_negative
