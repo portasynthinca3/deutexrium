@@ -3,14 +3,14 @@ defmodule Deutexrium.Server.Voice do
   require Logger
   alias Deutexrium.Server.{RqRouter, Channel}
 
-  @trggers [
+  @triggers [
     "slash say",
     "slash generate",
     "бот скажи",
     "вот скажи",
   ]
   defp is_trigger(alts), do:
-    alts |> Enum.any?(fn %{"text" => text} -> text in @trggers end)
+    alts |> Enum.any?(fn %{"text" => text} -> text in @triggers end)
 
   @impl true
   def init(id) do
