@@ -72,7 +72,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:MESSAGE_CREATE, %Struct.Message{}=msg, _}) do
+  def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
     unless msg.guild_id == nil or msg.channel_id == nil do
       # notify users about slash commands
       if String.starts_with?(msg.content, "!!d ") do
@@ -117,10 +117,10 @@ defmodule Deutexrium do
           {:message, text} ->
             # see it it's impostor time
             impostor_rate = Server.Channel.get({msg.channel_id, msg.guild_id}, :impostor_rate)
-            webhook_data = cond do
-              (impostor_rate > 0) and (:rand.uniform() <= impostor_rate / 100.0) ->
+            webhook_data = if (impostor_rate > 0) and (:rand.uniform() <= impostor_rate / 100.0) do
                 Server.Channel.get_meta({msg.channel_id, msg.guild_id}).webhook_data
-              true -> nil
+            else
+              nil
             end
             try_sending_webhook(text, msg.channel_id, webhook_data)
         end
@@ -130,11 +130,11 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help", options: [%{name: "setting", value: setting}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help", options: [%{name: "setting", value: setting}]}} = inter, _}) do
     %{name: name, description: desc} = binary_settings()
         |> Enum.concat(non_binary_settings())
         |> Enum.concat(command_help())
-        |> Enum.find_value(fn %{value: val}=map -> if val == setting, do: map end)
+        |> Enum.find_value(fn %{value: val} = map -> if val == setting, do: map end)
 
     embed = %Struct.Embed{}
         |> put_title("Deuterium setting/command help")
@@ -145,7 +145,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}} = inter, _}) do
     unless inter_notice(inter) do
       id = {inter.channel_id, inter.guild_id}
       count = if inter.data.options == nil do
@@ -155,12 +155,11 @@ defmodule Deutexrium do
         if val in 1..Server.Channel.get(id, :max_gen_len) do val else 0 end
       end
 
-      unless count == 0 do
+      if count > 0 do
         try do
           text = 1..count
-              |> Enum.map(fn _ -> {_, _, t} = Server.Channel.generate(id)
+              |> Enum.map_join("\n", fn _ -> {_, _, t} = Server.Channel.generate(id)
                           t end)
-              |> Enum.join("\n")
           Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
         rescue
           _ -> Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **generation failed**"}})
@@ -173,13 +172,13 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: nil}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: nil}} = inter, _}) do
     unless inter_notice(inter) do
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **you must supply the sentiment, author or both. For simple generation use [/gen](https://deut.yamka.app/commands/gen)**", flags: 64}})
     end
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: options}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: options}} = inter, _}) do
     unless inter_notice(inter) do
       id = {inter.channel_id, inter.guild_id}
       {sentiment, user} = case options do
@@ -211,7 +210,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}} = inter, _}) do
     unless inter_notice(inter) do
       {_, _, text} = Server.Channel.generate({channel, inter.guild_id})
       Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
@@ -220,7 +219,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "join", options: [%{name: "channel", value: channel}, %{name: "language", value: lang}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "join", options: [%{name: "channel", value: channel}, %{name: "language", value: lang}]}} = inter, _}) do
     unless inter_notice(inter) do
       Server.Voice.join({channel, inter.guild_id}, lang)
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **joined** <##{channel}>", flags: 64}})
@@ -229,14 +228,14 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}} = inter, _}) do
     {_, _, text} = Server.Channel.generate({0, 0})
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help"}} = inter, _}) do
     embed = %Struct.Embed{}
         |> put_title("Deuterium commands")
         |> put_color(0xe6f916)
@@ -276,7 +275,7 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}} = inter, _}) do
     embed = %Struct.Embed{}
         |> put_title("Ways to support Deuterium")
         |> put_color(0xe6f916)
@@ -289,7 +288,7 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}} = inter, _}) do
     embed = %Struct.Embed{}
         |> put_title("Deuterium privacy policy")
         |> put_color(0xe6f916)
@@ -333,7 +332,7 @@ defmodule Deutexrium do
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}} = inter, _}) do
     embed = %Struct.Embed{}
         |> put_title("Deuterium support")
         |> put_color(0xe6f916)
@@ -345,7 +344,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}} = inter, _}) do
     unless inter_notice(inter) do
       chan_model = Server.Channel.get_model_stats({inter.channel_id, inter.guild_id})
       global_model = Server.Channel.get_model_stats({0, 0})
@@ -365,7 +364,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}} = inter, _}) do
     used_space = Deutexrium.Persistence.used_space() |> div(1024)
     used_memory = :erlang.memory(:total) |> div(1024 * 1024)
     %{guilds: guild_server_cnt, channels: chan_server_cnt} = Server.Supervisor.server_count
@@ -396,7 +395,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}} = inter, _}) do
     unless inter_notice(inter) do
       %{user_stats: scoreboard} = Server.Guild.get_meta(inter.guild_id)
 
@@ -414,7 +413,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}} = inter, _}) do
     if check_admin_perm(inter) do
       cond do
         target == "server" and property == "settings" ->
@@ -432,7 +431,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}} = inter, _}) do
     if check_admin_perm(inter) do
       setting = :erlang.binary_to_existing_atom(setting, :utf8)
       value = case value do
@@ -452,7 +451,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "set", options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}} = inter, _}) do
     if check_admin_perm(inter) do
       setting = :erlang.binary_to_existing_atom(setting, :utf8)
       value = case setting do
@@ -479,7 +478,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings", options: [%{name: target}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings", options: [%{name: target}]}} = inter, _}) do
     if check_admin_perm(inter) do
       meta = case target do
         "server" ->
@@ -504,7 +503,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "search", options: [%{name: "word", value: word}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "search", options: [%{name: "word", value: word}]}} = inter, _}) do
     word = word |> String.downcase
     if check_admin_perm(inter) do
       embed = %Struct.Embed{}
@@ -531,7 +530,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "forget", options: [%{name: "word", value: word}]}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "forget", options: [%{name: "word", value: word}]}} = inter, _}) do
     if check_admin_perm(inter) do
       Server.Channel.forget({inter.channel_id, inter.guild_id}, word)
       Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **i forgor `#{word}` :skull:**", flags: 64}})
@@ -542,7 +541,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "impostor"}}=inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "impostor"}} = inter, _}) do
     response = if check_admin_perm(inter) do
       # delete existing webhook
       case Server.Channel.get_meta({inter.channel_id, inter.guild_id}).webhook_data do
@@ -569,8 +568,8 @@ defmodule Deutexrium do
 
 
 
- #def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn",   options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}}=inter, _}) do
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "export", options: [%{value: resource}, %{value: format}]}}=inter, _}) do
+ #def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "turn",   options: [%{name: target, options: [%{value: setting}, %{value: value}]}]}} = inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "export", options: [%{value: resource}, %{value: format}]}} = inter, _}) do
     format = :erlang.binary_to_atom(format)
     extension = case format do
       :etf_gz -> ".etf.gz"
@@ -650,7 +649,7 @@ defmodule Deutexrium do
   defp try_sending_webhook({_, _, text}, chan, :nil) do
     Api.create_message(chan, content: text)
   end
-  defp try_sending_webhook({user_id, _, text}=what, chan, {id, token}) do
+  defp try_sending_webhook({user_id, _, text} = what, chan, {id, token}) do
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
     case Api.execute_webhook(id, token, %{content: text, username: user.username <> " (Deuterium)", avatar_url: ava}) do

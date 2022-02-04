@@ -29,7 +29,7 @@ defmodule Deutexrium.Persistence.Meta do
         |> :erlang.binary_to_term)
   end
 
-  def dump!(channel_id, %Deutexrium.Persistence.Meta{}=data) when is_integer(channel_id) do
+  def dump!(channel_id, %Deutexrium.Persistence.Meta{} = data) when is_integer(channel_id) do
     data = data
         |> :erlang.term_to_binary
         |> :zlib.gzip

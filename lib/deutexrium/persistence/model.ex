@@ -28,7 +28,7 @@ defmodule Deutexrium.Persistence.Model do
         |> Map.merge(%{shift: true})})
   end
 
-  def dump!(channel_id, %Model{}=data) when is_integer(channel_id) do
+  def dump!(channel_id, %Model{} = data) when is_integer(channel_id) do
     data = data
         |> :erlang.term_to_binary
         |> :zlib.gzip

@@ -41,7 +41,7 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_call({:join, lang}, _, state={{chan, _}, timeout, {conn, stream}}) do
+  def handle_call({:join, lang}, _, {{chan, _}, timeout, {conn, stream}} = state) do
     # tell it the channel id
     :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
       op: "connect",
@@ -62,7 +62,7 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info({:gun_ws, _, _, {:text, json}}, state={id={chan, _}, timeout, _}) do
+  def handle_info({:gun_ws, _, _, {:text, json}}, {{chan, _} = id, timeout, _} = state) do
     %{"op" => op} = data = Jason.decode!(json) |> Enum.into(%{})
 
     case op do
@@ -98,7 +98,7 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info({:say, text}, state={_, timeout, {conn, stream}}) do
+  def handle_info({:say, text}, {_, timeout, {conn, stream}} = state) do
     :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
       op: "say",
       text: text
@@ -107,7 +107,7 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info(_, state={_, timeout, _}) do
+  def handle_info(_, {_, timeout, _} = state) do
     {:noreply, state, timeout}
   end
 

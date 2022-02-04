@@ -18,7 +18,7 @@ defmodule Deutexrium.Server.Channel do
     end
   end
 
-  defp generate_message(%Markov{}=model, sentiment \\ :nosentiment, author \\ nil) do
+  defp generate_message(%Markov{} = model, sentiment \\ :nosentiment, author \\ nil) do
     try do
       start = cond do
         author == nil and sentiment == :nosentiment -> [:start, :start]
@@ -35,7 +35,7 @@ defmodule Deutexrium.Server.Channel do
     end
   end
 
-  defp train_model(%Model{}=model, text, author) do
+  defp train_model(%Model{} = model, text, author) do
     sentiment = Sentiment.detect(text)
     markov = model.data |> Markov.train([{:sentiment, sentiment}, {:author, author} | text |> String.split])
     Deutexrium.Influx.LoadCntr.add(:train)
@@ -76,17 +76,18 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call(:get_meta, _from, {_, meta, _, timeout}=state) do
+  def handle_call(:get_meta, _from, {_, meta, _, timeout} = state) do
     {:reply, meta, state, timeout}
   end
   @impl true
-  def handle_call(:get_model, _from, {_, _, model, timeout}=state) do
+  def handle_call(:get_model, _from, {_, _, model, timeout} = state) do
     {:reply, Map.delete(model, :data), state, timeout}
   end
 
   @impl true
-  def handle_call({:message, message, by_bot, author_id}, _from, {{cid, guild}=id, meta, model, timeout}=state) do
+  def handle_call({:message, message, by_bot, author_id}, _from, {{cid, guild} = id, meta, model, timeout} = state) do
     # don't train if ignoring bots
+    # credo:disable-for-next-line
     unless by_bot and get_setting({id, meta}, :ignore_bots) do
       # check training settings
       train = id == 0 or get_setting({id, meta}, :train)
@@ -110,13 +111,12 @@ defmodule Deutexrium.Server.Channel do
 
       # auto-generation
       autorate = get_setting({id, meta}, :autogen_rate)
-      reply = cond do
-        (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) ->
-          Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
-          params = generate_message(model.data, sentiment)
-          {:message, params}
-
-        true -> :ok
+      reply = if (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) do
+        Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
+        params = generate_message(model.data, sentiment)
+        {:message, params}
+      else
+        :ok
       end
 
       # scoreboard
@@ -130,7 +130,7 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call({:generate, sentiment, author}, _from, {{cid, _}=id, meta, model, timeout}=state) do
+  def handle_call({:generate, sentiment, author}, _from, {{cid, _} = id, meta, model, timeout} = state) do
     Logger.info("channel-#{cid} server: generating on demand with sentiment=#{inspect sentiment} and author=#{inspect author}")
     case generate_message(model.data, sentiment, author) do
       {a, s, text} ->
@@ -146,34 +146,34 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call({:reset, :settings}, _from, {{cid, _}=id, _, model, timeout}) do
+  def handle_call({:reset, :settings}, _from, {{cid, _} = id, _, model, timeout}) do
     Logger.info("channel-#{cid} server: settings reset")
     {:reply, :ok, {id, %Meta{}, model, timeout}, timeout}
   end
   @impl true
-  def handle_call({:reset, :model}, _from, {{cid, _}=id, meta, _, timeout}) do
+  def handle_call({:reset, :model}, _from, {{cid, _} = id, meta, _, timeout}) do
     Logger.info("channel-#{cid} server: model reset")
     {:reply, :ok, {id, meta, %Model{}, timeout}, timeout}
   end
 
   @impl true
-  def handle_call({:set, setting, val}, _from, {{cid, _}=id, meta, model, timeout}) do
+  def handle_call({:set, setting, val}, _from, {{cid, _} = id, meta, model, timeout}) do
     Logger.info("channel-#{cid} server: settings changed")
     {:reply, :ok, {id, Map.put(meta, setting, val), model, timeout}, timeout}
   end
 
   @impl true
-  def handle_call({:get, setting}, _from, {id, meta, _, timeout}=state) do
+  def handle_call({:get, setting}, _from, {id, meta, _, timeout} = state) do
     {:reply, get_setting({id, meta}, setting), state, timeout}
   end
 
   @impl true
-  def handle_call(:token_stats, _from, {_, _, model, timeout}=state) do
+  def handle_call(:token_stats, _from, {_, _, model, timeout} = state) do
     {:reply, MarkovTool.token_stats(model.data), state, timeout}
   end
 
   @impl true
-  def handle_call({:forget, token}, _from, {{cid, _}=id, meta, model, timeout}) do
+  def handle_call({:forget, token}, _from, {{cid, _} = id, meta, model, timeout}) do
     Logger.info("channel-#{cid} server: forgetting token")
     {:reply, :ok,
       {id, meta, %{model |
@@ -183,7 +183,7 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_call({:export, format}, _from, {{cid, _}, meta, model, timeout}=state) do
+  def handle_call({:export, format}, _from, {{cid, _}, meta, model, timeout} = state) do
     Logger.info("channel-#{cid} server: exporting in #{inspect format}")
     encode = case format do
       :etf_gz -> &(&1 |> :erlang.term_to_binary |> :zlib.gzip())
@@ -194,7 +194,7 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_cast({:shutdown, freeze}, {{id, _}, _, _, _}=state) do
+  def handle_cast({:shutdown, freeze}, {{id, _}, _, _, _} = state) do
     handle_shutdown(state, not freeze)
     if freeze do
       Logger.notice("channel-#{id} server: freezing")
@@ -207,7 +207,7 @@ defmodule Deutexrium.Server.Channel do
     handle_shutdown(state, true)
   end
 
-  defp handle_shutdown({{id, _}, meta, model, _}=_state, do_exit) do
+  defp handle_shutdown({{id, _}, meta, model, _} = _state, do_exit) do
     # unload everything
     Logger.info("channel-#{id} server: unloading")
     Meta.dump!(id, meta)
@@ -234,12 +234,12 @@ defmodule Deutexrium.Server.Channel do
 
   @type server_id() :: {integer(), integer()}
 
-  @spec get_meta(server_id()) :: %Meta{}
+  @spec get_meta(server_id()) :: Meta.t()
   def get_meta(id) when (is_integer(id) or is_tuple(id)) do
     id |> RqRouter.route_to_chan(:get_meta)
   end
 
-  @spec get_model_stats(server_id()) :: %Model{}
+  @spec get_model_stats(server_id()) :: Model.t()
   def get_model_stats(id) when (is_integer(id) or is_tuple(id)) do
     id |> RqRouter.route_to_chan(:get_model)
   end

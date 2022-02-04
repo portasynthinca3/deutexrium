@@ -27,7 +27,7 @@ defmodule Deutexrium.Server.Guild do
   end
 
   @impl true
-  def handle_call(:get_meta, _from, {_, meta, timeout}=state) do
+  def handle_call(:get_meta, _from, {_, meta, timeout} = state) do
     {:reply, meta, state, timeout}
   end
 
@@ -48,7 +48,7 @@ defmodule Deutexrium.Server.Guild do
   end
 
   @impl true
-  def handle_call({:export, format}, _from, {id, meta, timeout}=state) do
+  def handle_call({:export, format}, _from, {id, meta, timeout} = state) do
     Logger.info("guild-#{id} server: exporting in #{inspect format}")
     encode = case format do
       :etf_gz -> &(&1 |> :erlang.term_to_binary |> :zlib.gzip())
@@ -59,7 +59,7 @@ defmodule Deutexrium.Server.Guild do
   end
 
   @impl true
-  def handle_cast({:shutdown, freeze}, {id, _, _}=state) do
+  def handle_cast({:shutdown, freeze}, {id, _, _} = state) do
     handle_shutdown(state, not freeze)
     if freeze do
       Logger.notice("guild-#{id} server: freezing")
@@ -72,7 +72,7 @@ defmodule Deutexrium.Server.Guild do
     handle_shutdown(state, true)
   end
 
-  defp handle_shutdown({id, meta, _}=_state, do_exit) do
+  defp handle_shutdown({id, meta, _} = _state, do_exit) do
     # unload everything
     Logger.info("guild-#{id} server: unloading")
     GuildMeta.dump!(id, meta)
@@ -96,7 +96,7 @@ defmodule Deutexrium.Server.Guild do
 
 
 
-  @spec get_meta(integer()) :: %GuildMeta{}
+  @spec get_meta(integer()) :: GuildMeta.t()
   def get_meta(id) when is_integer(id) do
     id |> RqRouter.route_to_guild(:get_meta)
   end
