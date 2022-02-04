@@ -13,7 +13,7 @@ export default function say(text: string, lang: string, path: string, cb: () => 
         json: [
             {
                 ssml: `<speak version="1.0" xml:lang="en-US">
-                           <prosody volume='default' rate='slow' pitch='default'>
+                           <prosody volume='default' rate='default' pitch='default'>
                                ${text}
                            </prosody>
                        </speak>`,
