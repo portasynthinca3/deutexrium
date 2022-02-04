@@ -10,6 +10,7 @@ defmodule Deutexrium.Influx do
     Hosts submodules describing data points
     """
     defmodule Cpu do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "cpu"
@@ -18,6 +19,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule Memory do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "memory"
@@ -26,6 +28,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule Guilds do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "guilds"
@@ -34,6 +37,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule Channels do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "channels"
@@ -42,6 +46,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule Train do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "train"
@@ -50,6 +55,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule Gen do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "gen"
@@ -58,6 +64,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule KnownGuilds do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "k_guilds"
@@ -66,6 +73,7 @@ defmodule Deutexrium.Influx do
       end
     end
     defmodule KnownChannels do
+      @moduledoc false
       use Instream.Series
       series do
         measurement "k_channels"
