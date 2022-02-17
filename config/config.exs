@@ -6,7 +6,7 @@ config :deutexrium,
   guild_unload_timeout: 4 * 60 * 1000,
   debug_people: [471715557096554518], # ids of people that can run "deut_debug"
   default_router_cnt: 4,
-  log_interval: 0,
+  log_interval: 2000,
   node_voice_server: {'localhost', 2700}
 
 # assuming InfluxDB v1.x
@@ -21,7 +21,7 @@ config :logger,
   backends: [:console, {LoggerFileBackend, :debug_log}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel],
-  level: :info
+  level: :notice
 config :logger, :debug_log,
   path: "deuterium.log",
   level: :info
