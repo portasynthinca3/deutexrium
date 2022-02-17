@@ -115,8 +115,18 @@ defmodule Deutexrium.Server.Voice do
 
   @type server_id() :: {integer(), integer()}
 
-  @spec join(server_id(), String.t()) :: :ok
-  def join(id, lang) when (is_integer(id) or is_tuple(id)) and is_binary(lang) do
-    id |> RqRouter.route_to_voice({:join, lang})
+  @spec join(server_id(), String.t()) :: :ok | {:error, atom()}
+  def join({chan, guild} = id, lang) when is_tuple(id) and is_binary(lang) do
+    chan = Nostrum.Cache.ChannelCache.get!(chan)
+    cond do
+      chan.type != 2 ->
+        {:error, :text}
+
+      guild in Deutexrium.Persistence.allowed_vc() ->
+        RqRouter.route_to_voice(id, {:join, lang})
+
+      true ->
+        {:error, :pay}
+    end
   end
 end

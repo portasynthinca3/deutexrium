@@ -221,8 +221,14 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "join", options: [%{name: "channel", value: channel}, %{name: "language", value: lang}]}} = inter, _}) do
     unless inter_notice(inter) do
-      Server.Voice.join({channel, inter.guild_id}, lang)
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **joined** <##{channel}>", flags: 64}})
+      case Server.Voice.join({channel, inter.guild_id}, lang) do
+        :ok ->
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **joined** <##{channel}>", flags: 64}})
+        {:error, :pay} ->
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **this feature is paid and costs 5 USD per month per server. Contact `porta#1746` if you want to use it or know why.**", flags: 64}})
+        {:error, :text} ->
+          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: <##{channel}> **is not a voice channel**", flags: 64}})
+      end
     end
   end
 
@@ -241,8 +247,6 @@ defmodule Deutexrium do
         |> put_color(0xe6f916)
         |> put_description("More extensive help information at https://deut.yamka.app/")
         |> put_url("https://deut.yamka.app/")
-
-        |> put_field(":loudspeaker: ANNOUNCEMENT", "A bug was recently found in how message generation models were trained that led to poor output quality if authorship and/or sentiment tracking were used. As a result, I have completely wiped all generation models. In addition, I'm now saving raw message content along with Markov models so this this never happens again and I'm able to re-train them in case a bug like this pops up. This means that the privacy policy had to be updated. If you object to the changes, please either stop using the bot or reach out to me if you'd like to opt-out or suggest an alternative solution. The bot is open source so you can [take a look at its code](https://github.com/portasynthinca3/deutexrium) and evaluate how it uses your data.")
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
