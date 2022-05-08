@@ -41,13 +41,12 @@ defmodule Deutexrium do
   def command_help, do: [
   ]
 
-  @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.yamka.app/admin-cmd/admin-commands-notice)"
+  @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
 
   def update_presence do
     Logger.info("updating presence")
     guild_cnt = Nostrum.Cache.GuildCache.all() |> Enum.count()
-    chan_cnt = Deutexrium.Persistence.channel_cnt()
-    Api.update_status("", "#{guild_cnt} servers and #{chan_cnt} channels", 2)
+    Api.update_status("", "#{guild_cnt} servers", 2)
   end
 
   def presence_updater do
@@ -74,16 +73,6 @@ defmodule Deutexrium do
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
     unless msg.guild_id == nil or msg.channel_id == nil do
-      # notify users about slash commands
-      if String.starts_with?(msg.content, "!!d ") do
-        Api.create_message(msg.channel_id, content: """
-        :sparkles: **I am now using slash commands! Try `/help`** :sparkles:
-        If /help doesn't work, please kick me and re-authorize using this link:
-        https://discord.com/oauth2/authorize?client_id=733605243396554813&scope=bot%20applications.commands
-        _(this message will never stop appearing)_
-        """)
-      end
-
       # print metadata
       if msg.content == "deut_debug" and msg.author.id in Application.fetch_env!(:deutexrium, :debug_people) do
         Api.create_message(msg.channel_id, content: """
@@ -165,7 +154,7 @@ defmodule Deutexrium do
           _ -> Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **generation failed**"}})
         end
       else
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.yamka.app/commands/gen-less-than-number-greater-than)", flags: 64}})
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/commands/gen-less-than-number-greater-than)", flags: 64}})
       end
     end
   end
@@ -174,7 +163,7 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: nil}} = inter, _}) do
     unless inter_notice(inter) do
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **you must supply the sentiment, author or both. For simple generation use [/gen](https://deut.yamka.app/commands/gen)**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **you must supply the sentiment, author or both. For simple generation use [/gen](https://deut.portasynthinca3.me/commands/gen)**", flags: 64}})
     end
   end
 
@@ -194,7 +183,7 @@ defmodule Deutexrium do
           webhook = Server.Channel.get(id, :webhook_data)
           Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
             {_, _} -> ":white_check_mark: **the response will be sent shortly**"
-            nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.yamka.app/commands/impostor)**"
+            nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/commands/impostor)**"
           end, flags: 64}})
           text = text <> "\n||this message was generated in response to a `/gen_by` invocation by <@#{inter.member.user.id}>||"
           try_sending_webhook({author, sentiment, text}, inter.channel_id, webhook)
@@ -245,8 +234,8 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium commands")
         |> put_color(0xe6f916)
-        |> put_description("More extensive help information at https://deut.yamka.app/")
-        |> put_url("https://deut.yamka.app/")
+        |> put_description("More extensive help information at https://deut.portasynthinca3.me/")
+        |> put_url("https://deut.portasynthinca3.me/")
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
@@ -296,7 +285,7 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium privacy policy")
         |> put_color(0xe6f916)
-        |> put_url("https://deut.yamka.app/privacy-policy")
+        |> put_url("https://deut.portasynthinca3.me/privacy-policy")
 
         |> put_field("1. SCOPE", ~S"""
            This message describes how the Deuterium Discord bot ("Deuterium", "the bot", "bot"), its creator ("I", "me") processes its Users' ("you") data.
@@ -356,7 +345,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Deuterium status")
           |> put_color(0xe6f916)
-          |> put_url("https://deut.yamka.app/commands/status")
+          |> put_url("https://deut.portasynthinca3.me/commands/status")
 
           |> put_field("Messages learned", chan_model.trained_on)
           |> put_field("Messages contributed to the global model", chan_model.global_trained_on)
@@ -381,7 +370,7 @@ defmodule Deutexrium do
     embed = %Struct.Embed{}
         |> put_title("Deuterium resource usage")
         |> put_color(0xe6f916)
-        |> put_url("https://deut.yamka.app/commands/stats")
+        |> put_url("https://deut.portasynthinca3.me/commands/stats")
 
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
         |> put_field("Bot uptime", "#{uptime}", true)
@@ -405,7 +394,7 @@ defmodule Deutexrium do
 
       embed = %Struct.Embed{} |> put_title("Deuterium scoreboard")
           |> put_color(0xe6f916)
-          |> put_url("https://deut.yamka.app/commands/scoreboard")
+          |> put_url("https://deut.portasynthinca3.me/commands/scoreboard")
       top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
       {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
         {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
@@ -494,7 +483,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Deuterium #{target} settings")
           |> put_color(0xe6f916)
-          |> put_url("https://deut.yamka.app/admin-cmd/settings")
+          |> put_url("https://deut.portasynthinca3.me/admin-cmd/settings")
       embed = Enum.reduce(Enum.concat(binary_settings, non_binary_settings), embed, fn elm, acc ->
         acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
       end)
@@ -513,7 +502,7 @@ defmodule Deutexrium do
       embed = %Struct.Embed{}
           |> put_title("Search results")
           |> put_color(0xe6f916)
-          |> put_url("https://deut.yamka.app/admin-cmd/search")
+          |> put_url("https://deut.portasynthinca3.me/admin-cmd/search")
       embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
           |> Enum.filter(fn
             {k, _} when is_atom(k) -> false
@@ -559,7 +548,7 @@ defmodule Deutexrium do
           Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
           ":white_check_mark: **impersonation activated**"
         {:error, %{status_code: 403}} ->
-          ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.yamka.app/admin-cmd/impostor)"
+          ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)"
         {:error, err} ->
           Logger.error("error adding webhook: #{inspect err}")
           ":x: **unknown error**"

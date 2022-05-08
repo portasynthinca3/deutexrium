@@ -32,6 +32,8 @@ defmodule Deutexrium.Server.RqRouter do
     end
 
     case map |> Map.get(id) do
+      # the corresponding server was never started
+      # start it and retry
       nil ->
         {:ok, pid} = GenServer.start(module, id)
         map = map |> Map.put(id, pid)
@@ -39,10 +41,16 @@ defmodule Deutexrium.Server.RqRouter do
 
       pid when is_pid(pid) ->
         if Process.alive?(pid) do
+          # the server is up
           ref = make_ref()
           pid |> send({:"$gen_call", {self(), ref}, rq})
+          # delete the ref in 10 secs
+          # it should get deleted after the server sent a response, but that won't
+          # happen if it crashes while handling the request
+          Process.send_after(self(), {:delete, ref}, 10_000)
           {map, ref}
         else
+          # the server was started at some point but it has crashed
           # kill it just in case
           Process.exit(pid, :normal)
           forward_request(map |> Map.delete(id), target, rq)
@@ -53,12 +61,11 @@ defmodule Deutexrium.Server.RqRouter do
   defp router_pid(target) do
     [ring: ring] = :ets.lookup(:ring_state, :ring)
     {:ok, pid} = ring |> Ring.find_node(inspect target)
-
     pid
   end
 
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, 10 * 1000)
+    Process.send_after(self(), :cleanup, 10_000)
   end
 
 
@@ -130,6 +137,7 @@ defmodule Deutexrium.Server.RqRouter do
     end
   end
 
+  @impl true
   def handle_call(term, _, state) do
     Logger.warn("invalid router request: #{inspect term}")
     {:noreply, state}
@@ -139,6 +147,13 @@ defmodule Deutexrium.Server.RqRouter do
   def handle_info({ref, response}, %State{} = state) when is_reference(ref) do
     %{^ref => {receiver, response_ref}} = state.ref_receivers
     send(receiver, {response_ref, response})
+    {:noreply, %{state |
+      ref_receivers: state.ref_receivers |> Map.delete(ref)
+    }}
+  end
+
+  @impl true
+  def handle_info({:delete, ref}, %State{} = state) when is_reference(ref) do
     {:noreply, %{state |
       ref_receivers: state.ref_receivers |> Map.delete(ref)
     }}

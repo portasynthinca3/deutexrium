@@ -10,11 +10,6 @@ defmodule Deutexrium.Persistence do
     end)
   end
 
-  def channel_cnt do
-    path = Application.fetch_env!(:deutexrium, :data_path)
-    length(File.ls!(path) |> Enum.filter(fn x -> String.starts_with?(x, "model_") end))
-  end
-
   def guild_cnt do
     path = Application.fetch_env!(:deutexrium, :data_path)
     length(File.ls!(path) |> Enum.filter(fn x -> String.starts_with?(x, "guild_") end))

@@ -18,7 +18,7 @@ defmodule Ctl do
 
     commands = [%{
       name: "reset",
-      description: "reset the generation model or settings of this channel or server",
+      description: "reset something",
       options: [
         %{
           name: "channel",
@@ -54,15 +54,14 @@ defmodule Ctl do
 
     # zero-parameter commands
     no_param = [
-      {"status", "show the current settings and stats"},
-      {"stats", "show how much resources I use"},
+      {"status", "key statistics"},
+      {"stats", "my resource usage. this isn't particularly interesting"},
       {"ggen", "immediately generate a message using the global model"},
-      {"donate", "ways to support the bot"},
+      {"donate", "ways to support me"},
       {"privacy", "privacy policy"},
       {"support", "ways to get support"},
-      {"scoreboard", "top-10 most active users in this server"},
-      {"rps", "start a game of Rock-Paper-Scissors with me"},
-      {"impostor", "enable impersonation mode. Please read /help impostor before using this command!"}
+      {"scoreboard", "top-10 most active users on this server"},
+      {"impostor", "enable impersonation mode"}
     ]
     no_param = no_param |> Enum.map(fn {title, desc} ->
       %{name: title, description: desc}
@@ -146,6 +145,7 @@ defmodule Ctl do
           type: 7, # channel
           name: "channel",
           description: "the channel to join",
+          channel_types: [2], # guild voice
           required: true
         },
         %{
