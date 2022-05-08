@@ -375,7 +375,6 @@ defmodule Deutexrium do
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
         |> put_field("Bot uptime", "#{uptime}", true)
         |> put_field("Time since I was created", "#{been_created_for}", true)
-        |> put_field("Number of known channels", "#{Deutexrium.Persistence.channel_cnt}", true)
         |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
         |> put_field("Internal request routers", "#{Server.Supervisor.router_cnt}", true)
@@ -484,7 +483,7 @@ defmodule Deutexrium do
           |> put_title("Deuterium #{target} settings")
           |> put_color(0xe6f916)
           |> put_url("https://deut.portasynthinca3.me/admin-cmd/settings")
-      embed = Enum.reduce(Enum.concat(binary_settings, non_binary_settings), embed, fn elm, acc ->
+      embed = Enum.reduce(Enum.concat(binary_settings(), non_binary_settings()), embed, fn elm, acc ->
         acc |> put_field(elm.name, setting_prettify(Map.get(meta, :erlang.binary_to_existing_atom(elm.value, :utf8))), true)
       end)
 

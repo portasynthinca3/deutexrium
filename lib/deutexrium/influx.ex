@@ -108,7 +108,6 @@ defmodule Deutexrium.Influx.Logger do
     mem = :erlang.memory(:total) |> div(1024 * 1024)
     cpu = :cpu_sup.avg1 / 2.56
     k_guilds = Nostrum.Cache.GuildCache.all |> Enum.count
-    k_channels = Deutexrium.Persistence.channel_cnt
 
     # write them
     Logger.debug("writing data to Influx")
@@ -120,7 +119,6 @@ defmodule Deutexrium.Influx.Logger do
       point(%Series.Train{}, %{host: host}, %{value: train}),
       point(%Series.Gen{}, %{host: host}, %{value: gen}),
       point(%Series.KnownGuilds{}, %{host: host}, %{value: k_guilds}),
-      point(%Series.KnownChannels{}, %{host: host}, %{value: k_channels})
     ]
     |> Deutexrium.Influx.write
   end
