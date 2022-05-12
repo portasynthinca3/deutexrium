@@ -136,7 +136,7 @@ defmodule Deutexrium.Server.Channel do
       {a, s, text} ->
         # remove mentions in the global model and if asked
         text = if cid == 0 or get_setting({id, meta}, :remove_mentions) do
-          Regex.replace(~r/<@!{0,1}[0-9]*>/, text, "**[mention removed]**")
+          Regex.replace(~r/<@[!&#]?{0,1}[0-9]*>/, text, "**[mention removed]**")
         else text end
 
         {:reply, {a, s, text}, state, timeout}
