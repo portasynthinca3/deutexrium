@@ -72,7 +72,7 @@ defmodule Deutexrium do
 
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
-    unless msg.guild_id == nil or msg.channel_id == nil do
+    unless msg.guild_id == nil or msg.channel_id == nil or length(msg.content) == 0 do
       # print metadata
       if msg.content == "deut_debug" and msg.author.id in Application.fetch_env!(:deutexrium, :debug_people) do
         Api.create_message(msg.channel_id, content: """
