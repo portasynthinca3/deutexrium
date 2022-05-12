@@ -72,7 +72,8 @@ defmodule Deutexrium do
 
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
-    unless msg.guild_id == nil or msg.channel_id == nil or byte_size(msg.content) == 0 do
+    self = msg.author.id == Nostrum.Cache.Me.get().id
+    unless self or msg.guild_id == nil or msg.channel_id == nil or byte_size(msg.content) == 0 do
       # print metadata
       if msg.content == "deut_debug" and msg.author.id in Application.fetch_env!(:deutexrium, :debug_people) do
         Api.create_message(msg.channel_id, content: """
@@ -640,8 +641,10 @@ defmodule Deutexrium do
     # wrong
     # it's not "dirty", it's straight up HORRIBLE
     if hack do
-      message = Api.create_message!(channel, "this message will be removed shortly.... hold on")
-      Api.delete_message!(message)
+      case Api.create_message(channel, content: "this message will be removed shortly.... hold on") do
+        {:ok, message} -> Api.delete_message(message)
+        _ -> :ok
+      end
     end
   end
 
@@ -655,7 +658,9 @@ defmodule Deutexrium do
     simulate_typing(text, channel, hack)
 
     # change nickname back
-    Api.modify_current_user_nick(guild, %{nick: old_nick})
+    unless String.contains?(old_nick, " (Deuterium)") do
+      Api.modify_current_user_nick(guild, %{nick: old_nick})
+    end
   end
 
   defp try_sending_webhook(data, chan, webhook, guild \\ nil)
@@ -691,7 +696,7 @@ defmodule Deutexrium do
       {:error, err} ->
         Logger.warn("webhook error: #{inspect err}")
         # retry with no webhook
-        try_sending_webhook(what, chan, :failed)
+        try_sending_webhook(what, chan, :fail)
     end
   end
 end

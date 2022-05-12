@@ -4,7 +4,7 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "1.2.3",
+      version: "1.2.4",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps()
