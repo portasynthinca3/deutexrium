@@ -28,10 +28,11 @@ config :logger, :debug_log,
 
 config :nostrum,
   token: System.get_env("DEUTEX_TOKEN"),
-  num_shards: :auto
-
-config :porcelain,
-  goon_warn_if_missing: false
+  num_shards: :auto,
+  intents: [
+    :guild_messages,
+    :guild_members
+  ]
 
 config :graceful_stop, :hooks, [
   [Ctl, :shutdown, []]

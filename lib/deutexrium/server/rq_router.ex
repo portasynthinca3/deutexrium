@@ -47,7 +47,7 @@ defmodule Deutexrium.Server.RqRouter do
           # delete the ref in 10 secs
           # it should get deleted after the server sent a response, but that won't
           # happen if it crashes while handling the request
-          Process.send_after(self(), {:delete, ref}, 10_000)
+          Process.send_after(self(), {:delete, ref}, 20_000)
           {map, ref}
         else
           # the server was started at some point but it has crashed
@@ -145,11 +145,17 @@ defmodule Deutexrium.Server.RqRouter do
 
   @impl true
   def handle_info({ref, response}, %State{} = state) when is_reference(ref) do
-    %{^ref => {receiver, response_ref}} = state.ref_receivers
-    send(receiver, {response_ref, response})
-    {:noreply, %{state |
-      ref_receivers: state.ref_receivers |> Map.delete(ref)
-    }}
+    case state.ref_receivers |> Map.get(ref) do
+      nil ->
+        Logger.warn("router-#{inspect self()}: no receiver for ref #{inspect ref}")
+        {:noreply, state}
+
+      {receiver, response_ref} ->
+        send(receiver, {response_ref, response})
+        {:noreply, %{state |
+          ref_receivers: state.ref_receivers |> Map.delete(ref)
+        }}
+    end
   end
 
   @impl true
@@ -174,7 +180,8 @@ defmodule Deutexrium.Server.RqRouter do
 
   @spec route({:channel|:guild, integer() | {integer(), integer()}}, any()) :: any()
   def route({type, _} = target, rq) when type == :channel or type == :guild or type == :voice do
-    router_pid(target) |> GenServer.call({:route, target, rq})
+    # increased timeout for CHONKERS (like the global model, it almost has half a million msgs!)
+    router_pid(target) |> GenServer.call({:route, target, rq}, 15_000)
   end
 
   @spec route_to_guild(integer(), any()) :: any()
