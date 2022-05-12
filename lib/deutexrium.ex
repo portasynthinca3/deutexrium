@@ -17,7 +17,7 @@ defmodule Deutexrium do
       description: "train the channel-specific message generation model"},
     %{value: "global_train",
       name: "global message collection",
-      description: "thain the global message generation model shared across all channels and servers"},
+      description: "train the global message generation model shared across all channels and servers"},
     %{value: "ignore_bots",
       name: "bot ignoration",
       description: "ignore other bot's messages"},
@@ -92,10 +92,10 @@ defmodule Deutexrium do
       possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
       if String.contains?(msg.content, possible_mentions) do
         sent = Sentiment.detect(msg.content)
-        Logger.debug("mentioned with sentiment=#{inspect sent}, responding with same")
+        Logger.debug("mentioned with sentiment=#{inspect sent}")
         case Server.Channel.generate({msg.channel_id, msg.guild_id}, sent) do
           {_, _, text} ->
-            simulate_typing(text, msg.channel_id)
+            simulate_typing(text, msg.channel_id, false)
             Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
           :error -> :ok
         end
@@ -111,7 +111,7 @@ defmodule Deutexrium do
             else
               nil
             end
-            try_sending_webhook(text, msg.channel_id, webhook_data)
+            try_sending_webhook(text, msg.channel_id, webhook_data, msg.guild_id)
         end
       end
     end
@@ -154,7 +154,7 @@ defmodule Deutexrium do
           _ -> Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **generation failed**"}})
         end
       else
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/commands/gen-less-than-number-greater-than)", flags: 64}})
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)", flags: 64}})
       end
     end
   end
@@ -183,10 +183,9 @@ defmodule Deutexrium do
           webhook = Server.Channel.get(id, :webhook_data)
           Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
             {_, _} -> ":white_check_mark: **the response will be sent shortly**"
-            nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/commands/impostor)**"
+            nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**"
           end, flags: 64}})
-          text = text <> "\n||this message was generated in response to a `/gen_by` invocation by <@#{inter.member.user.id}>||"
-          try_sending_webhook({author, sentiment, text}, inter.channel_id, webhook)
+          try_sending_webhook({author, sentiment, text}, inter.channel_id, webhook, inter.guild_id)
 
         :error ->
           Api.create_interaction_response(inter, %{type: 4, data: %{content: cond do
@@ -239,7 +238,6 @@ defmodule Deutexrium do
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
-        |> put_field("help <setting>", ":information_source: show settings information", true)
         |> put_field("status", ":green_circle: show the current stats", true)
         |> put_field("stats", ":yellow_circle: show how much resources I use", true)
         |> put_field("gen <count>", ":1234: generate <count> (1 if omitted) messages using the current channel's model immediately", true)
@@ -373,7 +371,7 @@ defmodule Deutexrium do
         |> put_url("https://deut.portasynthinca3.me/commands/stats")
 
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
-        |> put_field("Bot uptime", "#{uptime}", true)
+        |> put_field("Uptime", "#{uptime}", true)
         |> put_field("Time since I was created", "#{been_created_for}", true)
         |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
@@ -504,10 +502,8 @@ defmodule Deutexrium do
           |> put_url("https://deut.portasynthinca3.me/admin-cmd/search")
       embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
           |> Enum.filter(fn
-            {k, _} when is_atom(k) -> false
-            {k, _} when is_integer(k) -> false
-            {k, _} ->
-              k |> String.downcase |> String.contains?(word)
+            {k, _} when is_tuple(k) or is_atom(k) -> false
+            {k, _} -> k |> String.downcase |> String.contains?(word)
             end)
           |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
           |> Enum.reduce(embed, fn {k, v}, acc ->
@@ -541,7 +537,7 @@ defmodule Deutexrium do
         _ -> :ok
       end
       # create new webhook
-      case Api.create_webhook(inter.channel_id, %{name: "Deuterium", avatar: "https://cdn.discordapp.com/embed/avatars/0.png"}, "create webhook for impersonation") do
+      case Api.create_webhook(inter.channel_id, %{name: "Deuterium impersonation mode", avatar: "https://cdn.discordapp.com/embed/avatars/0.png"}, "create webhook for impersonation") do
         {:ok, %{id: hook_id, token: hook_token}} ->
           data = {hook_id, hook_token}
           Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
@@ -628,27 +624,74 @@ defmodule Deutexrium do
     end
   end
 
-  defp simulate_typing(text, channel) do
+  defp simulate_typing(text, channel, hack, guild \\ nil, username \\ nil)
+
+  defp simulate_typing(text, channel, hack, _guild = nil, _username = nil) do
+    # calculate delay
     words = text |> String.split() |> length()
-    delay = floor(words * ((40 + (10 * :rand.normal())) / 60) * 1000) # 40 +/-10 wpm
+    delay = floor(words * ((80 + (10 * :rand.normal())) / 60) * 1000) # 80 +/-10 wpm
+      |> min(5000) # max 5s
+
+    # start typing and wait
     Api.start_typing(channel)
     :timer.sleep(delay)
+
+    # dirty hack to stop typing
+    # wrong
+    # it's not "dirty", it's straight up HORRIBLE
+    if hack do
+      message = Api.create_message!(channel, "this message will be removed shortly.... hold on")
+      Api.delete_message!(message)
+    end
   end
 
-  defp try_sending_webhook({0, _, text}, chan, _) do
+  defp simulate_typing(text, channel, hack, guild, username) do
+    # remember the current nick
+    %{nick: old_nick} = Api.get_guild_member!(guild, Nostrum.Cache.Me.get().id)
+    # change nickname
+    Api.modify_current_user_nick(guild, %{nick: username <> " (Deuterium)"})
+
+    # do the actual typing
+    simulate_typing(text, channel, hack)
+
+    # change nickname back
+    Api.modify_current_user_nick(guild, %{nick: old_nick})
+  end
+
+  defp try_sending_webhook(data, chan, webhook, guild \\ nil)
+
+  defp try_sending_webhook({0, _, text}, chan, _webhook, _guild) do
+    # unknown user, send normal message
+    simulate_typing(text, chan, false)
     Api.create_message(chan, content: text)
   end
-  defp try_sending_webhook({_, _, text}, chan, :nil) do
+
+  defp try_sending_webhook({user_id, _, text}, chan, nil, guild) do
+    # no webhook
+    {:ok, user} = Api.get_user(user_id)
+    simulate_typing(text, chan, false, guild, user.username)
     Api.create_message(chan, content: text)
   end
-  defp try_sending_webhook({user_id, _, text} = what, chan, {id, token}) do
+
+  defp try_sending_webhook({_, _, text}, chan, :fail, _guild) do
+    # webhook failed, don't simulate typing
+    Api.create_message(chan, content: text)
+  end
+
+  defp try_sending_webhook(what = {user_id, _, text}, chan, {id, token}, guild) do
+    # get username and avatar
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
+
+    # simulate tping
+    simulate_typing(text, chan, true, guild, user.username)
+
     case Api.execute_webhook(id, token, %{content: text, username: user.username <> " (Deuterium)", avatar_url: ava}) do
       {:ok} -> :ok
       {:error, err} ->
         Logger.warn("webhook error: #{inspect err}")
-        try_sending_webhook(what, chan, :nil)
+        # retry with no webhook
+        try_sending_webhook(what, chan, :failed)
     end
   end
 end

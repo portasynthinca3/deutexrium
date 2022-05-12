@@ -26,3 +26,4 @@ deutexrium-*.tar
 /deuterium.log*
 /bup*.tar*
 build.sh
+ltemplate.txt
