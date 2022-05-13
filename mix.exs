@@ -4,7 +4,7 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "1.2.4",
+      version: "1.3.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -21,8 +21,8 @@ defmodule Deutexrium.MixProject do
   defp deps do
     [
       {:gun, "~> 2.0", hex: :remedy_gun},
-      # {:nostrum, github: "kraigie/nostrum", ref: "master"},
-      {:nostrum, "~> 0.5.1"},
+      {:nostrum, github: "kraigie/nostrum", ref: "master"},
+      # {:nostrum, "~> 0.5.1"},
       {:logger_file_backend, "~> 0.0.13"},
       {:cyanide, "~> 1.0"},
       {:markov, "~> 1.2.2"},

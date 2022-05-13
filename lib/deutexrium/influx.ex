@@ -103,7 +103,7 @@ defmodule Deutexrium.Influx.Logger do
   defp write do
     # collect stats
     {:ok, host} = :inet.gethostname
-    %{guilds: guilds, channels: channels} = Deutexrium.Server.Supervisor.server_count
+    %{guild: guilds, channel: channels} = Deutexrium.Server.Supervisor.server_count
     %{train: train, gen: gen} = Deutexrium.Influx.LoadCntr.get_state
     mem = :erlang.memory(:total) |> div(1024 * 1024)
     cpu = :cpu_sup.avg1 / 2.56

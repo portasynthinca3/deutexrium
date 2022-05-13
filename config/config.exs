@@ -29,9 +29,10 @@ config :logger, :debug_log,
 config :nostrum,
   token: System.get_env("DEUTEX_TOKEN"),
   num_shards: :auto,
-  intents: [
+  gateway_intents: [
+    :guilds,
     :guild_messages,
-    :guild_members
+    :message_content
   ]
 
 config :graceful_stop, :hooks, [

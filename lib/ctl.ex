@@ -16,6 +16,7 @@ defmodule Ctl do
   def add_slash_commands(guild \\ 0) do
     commands = []
 
+    # reset
     commands = [%{
       name: "reset",
       description: "reset something",
@@ -61,30 +62,16 @@ defmodule Ctl do
       {"privacy", "privacy policy"},
       {"support", "ways to get support"},
       {"scoreboard", "top-10 most active users on this server"},
-      {"impostor", "enable impersonation mode"}
+      {"impostor", "enable impersonation mode"},
+      {"settings", "configure settings"},
+      {"help", "show help"},
     ]
     no_param = no_param |> Enum.map(fn {title, desc} ->
       %{name: title, description: desc}
     end)
     commands = commands ++ no_param
 
-    commands = [%{
-      name: "help",
-      description: "show help",
-      options: [
-        %{
-          type: 3, # string
-          name: "setting",
-          description: "setting or command to help with",
-          required: false,
-          choices: Deutexrium.binary_settings
-              |> Enum.concat(Deutexrium.non_binary_settings)
-              |> Enum.concat(Deutexrium.command_help)
-              |> Enum.map(fn val -> Map.delete(val, :description) end),
-        }
-      ]
-    } | commands]
-
+    # gen
     commands = [%{
       name: "gen",
       description: "generate messages using the current channel's model immediately",
@@ -98,6 +85,7 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # gen_by
     commands = [%{
       name: "gen_by",
       description: "generate messages using the current channel's model with a specific sentiment and author",
@@ -124,6 +112,7 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # gen_from
     commands = [%{
       name: "gen_from",
       description: "generate a message using the specified channel's model immediately",
@@ -137,6 +126,7 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # join
     commands = [%{
       name: "join",
       description: "joins a voice channel",
@@ -161,6 +151,7 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # search
     commands = [%{
       name: "search",
       description: "search for a word in the model",
@@ -174,6 +165,7 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # forget
     commands = [%{
       name: "forget",
       description: "forget a word",
@@ -187,130 +179,7 @@ defmodule Ctl do
       ]
     } | commands]
 
-    commands = [%{
-      name: "turn",
-      description: "modify binary settings",
-      options: [
-        %{
-          name: "server",
-          description: "modify a binary setting server-wide",
-          type: 1, # subcommand
-          options: [
-            %{
-              type: 3, #string
-              name: "setting",
-              description: "the setting to modify",
-              choices: Deutexrium.binary_settings
-                  |> Enum.map(fn val -> Map.delete(val, :description) end),
-              required: true
-            },
-            %{
-              type: 3, # string
-              name: "value",
-              description: "the value to assign",
-              choices: [
-                %{value: "on", name: "on"},
-                %{value: "off", name: "off"}
-              ],
-              required: true
-            }
-          ]
-        },
-        %{
-          name: "channel",
-          description: "modify a binary setting channel-wise",
-          type: 1, # subcommand
-          options: [
-            %{
-              type: 3, #string
-              name: "setting",
-              description: "the setting to modify",
-              choices: Deutexrium.binary_settings
-                  |> Enum.map(fn val -> Map.delete(val, :description) end),
-              required: true
-            },
-            %{
-              type: 3, # string
-              name: "value",
-              description: "the value to assign",
-              choices: [
-                %{value: "on", name: "on"},
-                %{value: "off", name: "off"},
-                %{value: "nil", name: "nil"}
-              ],
-              required: true
-            }
-          ]
-        }
-      ]
-    } | commands]
-
-    commands = [%{
-      name: "set",
-      description: "modify non-binary settings",
-      options: [
-        %{
-          name: "server",
-          description: "modify a non-binary setting server-wide",
-          type: 1, # subcommand
-          options: [
-            %{
-              type: 3, #string
-              name: "setting",
-              description: "the setting to modify",
-              choices: Deutexrium.non_binary_settings
-                  |> Enum.map(fn val -> Map.delete(val, :description) end),
-              required: true
-            },
-            %{
-              type: 3, # string
-              name: "value",
-              description: "the value to assign",
-              required: true
-            }
-          ]
-        },
-        %{
-          name: "channel",
-          description: "modify a non-binary setting channel-wise",
-          type: 1, # subcommand
-          options: [
-            %{
-              type: 3, # string
-              name: "setting",
-              description: "the setting to modify",
-              choices: Deutexrium.non_binary_settings
-                  |> Enum.map(fn val -> Map.delete(val, :description) end),
-              required: true
-            },
-            %{
-              type: 3, # string
-              name: "value",
-              description: "the value to assign",
-              required: true
-            }
-          ]
-        }
-      ]
-    } | commands]
-
-    commands = [%{
-      name: "settings",
-      description: "display settings values",
-      options: [
-        %{
-          name: "server",
-          description: "display server settings",
-          type: 1, # subcommand
-        },
-        %{
-          name: "channel",
-          description: "display channel settings",
-          type: 1, # subcommand
-        }
-      ]
-    } | commands]
-
+    # export
     commands = [%{
       name: "export",
       description: "export data",
@@ -338,6 +207,12 @@ defmodule Ctl do
           ],
         }
       ]
+    } | commands]
+
+    # Generate by them
+    commands = [%{
+      name: "Generate message by them",
+      type: 2
     } | commands]
 
     {:ok, _} = if guild == 0 do
