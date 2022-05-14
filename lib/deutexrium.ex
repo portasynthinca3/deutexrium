@@ -494,8 +494,9 @@ defmodule Deutexrium do
 
 
 
-  def handle_event(event) do
-    Logger.warn("unknown event: #{inspect event}")
+  def handle_event(_event) do
+    :ok
+    # Logger.warn("unknown event: #{inspect event}")
   end
 
   defp check_admin_perm(inter) do
@@ -511,6 +512,7 @@ defmodule Deutexrium do
     words = text |> String.split() |> length()
     delay = floor(words * ((80 + (10 * :rand.normal())) / 60) * 1000) # 80 +/-10 wpm
       |> min(5000) # max 5s
+      |> max(1000) # min 1s
 
     # start typing and wait
     Api.start_typing(channel)
@@ -545,15 +547,14 @@ defmodule Deutexrium do
   defp try_sending_webhook(data, chan, webhook, guild \\ nil)
 
   defp try_sending_webhook({0, _, text}, chan, _webhook, _guild) do
-    # unknown user, send normal message
+    # unknown user
     simulate_typing(text, chan, false)
     Api.create_message(chan, content: text)
   end
 
-  defp try_sending_webhook({user_id, _, text}, chan, nil, guild) do
+  defp try_sending_webhook({_user_id, _, text}, chan, nil, _guild) do
     # no webhook
-    {:ok, user} = Api.get_user(user_id)
-    simulate_typing(text, chan, false, guild, user.username)
+    simulate_typing(text, chan, false)
     Api.create_message(chan, content: text)
   end
 
