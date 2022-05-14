@@ -12,7 +12,12 @@ defmodule Deutexrium.Persistence do
 
   def guild_cnt do
     path = Application.fetch_env!(:deutexrium, :data_path)
-    length(File.ls!(path) |> Enum.filter(fn x -> String.starts_with?(x, "guild_") end))
+    File.ls!(path) |> Enum.count(fn x -> String.starts_with?(x, "guild_") end)
+  end
+
+  def chan_cnt do
+    path = Application.fetch_env!(:deutexrium, :data_path)
+    File.ls!(path) |> Enum.count(fn x -> String.starts_with?(x, "model_") end)
   end
 
   def allowed_vc do

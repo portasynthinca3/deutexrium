@@ -312,7 +312,7 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}} = inter, _}) do
     used_space = Deutexrium.Persistence.used_space() |> div(1024)
     used_memory = :erlang.memory(:total) |> div(1024 * 1024)
-    %{guilds: guild_server_cnt, channels: chan_server_cnt} = Server.Supervisor.server_count
+    %{guild: guild_server_cnt, channel: chan_server_cnt} = Server.Supervisor.server_count
     {uptime, _} = :erlang.statistics(:wall_clock)
     uptime = uptime |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
     been_created_for = ((DateTime.utc_now() |> DateTime.to_unix(:millisecond)) - (Nostrum.Cache.Me.get().id
@@ -327,7 +327,8 @@ defmodule Deutexrium do
         |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
         |> put_field("Uptime", "#{uptime}", true)
         |> put_field("Time since I was created", "#{been_created_for}", true)
-        |> put_field("Number of known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
+        |> put_field("Known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
+        |> put_field("Known channels", "#{Deutexrium.Persistence.chan_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
         |> put_field("Internal request routers", "#{Server.Supervisor.router_cnt}", true)
         |> put_field("Internal guild servers", "#{guild_server_cnt}", true)
