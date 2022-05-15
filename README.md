@@ -31,7 +31,7 @@ Note that you have to register slash commands before using them. In order to do 
   - `Ctl.add_slash_commands` to register them globally (takes about an hour to update across all servers)
   - `Ctl.add_slash_commands(123)` to register them in the Discord server with ID 123 (instant)
 
-To perform a safe shutdown of the instance, enter an interactive session or connect to a running release and execute `Ctl.shutdown`, or send SIGTERM to a running release. Minor data loss may occur if this function is not run before shutdown.
+To perform a safe shutdown of the instance, enter an interactive session or connect to a running release and execute `Ctl.shutdown`, or send SIGTERM to a running release. Data loss may occur if this function is not run before shutdown.
 
 ### Exporting data from the master Deuterium instance
 If you own a Discord server that you'd like to be served by a self-hosted instance of this bot and you have used the master one before, you can import existing data. To do that, run the `/export` command of the master instance for both resource types (`channel` and `guild`) and the `etf.gz` format. The three files you received should be placed in the `/var/deutex_data` directory (unless changed in config) on the machine that hosts your Deuterium instance.

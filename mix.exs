@@ -4,7 +4,7 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "1.3.1",
+      version: "1.3.2",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -25,7 +25,7 @@ defmodule Deutexrium.MixProject do
       # {:nostrum, "~> 0.5.1"},
       {:logger_file_backend, "~> 0.0.13"},
       {:cyanide, "~> 1.0"},
-      {:markov, "~> 1.2.2"},
+      {:markov, "~> 1.2.3"},
       {:graceful_stop, "~> 0.2.0"},
       {:timex, "~> 3.0"},
       {:veritaserum, "~> 0.2.2"},
