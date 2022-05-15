@@ -1,9 +1,7 @@
 defmodule Deutexrium.Sup do
-  @moduledoc """
-  Main supervisor
-  """
-
   use Supervisor
+  @moduledoc "Main supervisor"
+
   require Logger
 
   def start_link(args) do
@@ -19,10 +17,9 @@ defmodule Deutexrium.Sup do
   def init(_init_arg) do
     children = [
       Deutexrium,
-      Deutexrium.Server.Supervisor,
-      Deutexrium.RingStarter,
       Deutexrium.Influx.LoadCntr,
-      Deutexrium.Influx
+      Deutexrium.Influx,
+      {Registry, keys: :unique, name: Registry.Server}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -6,7 +6,7 @@ defmodule Ctl do
   alias Nostrum.Api
 
   def shutdown do
-    Deutexrium.Server.Supervisor.shutdown
+    Deutexrium.Server.RqRouter.shutdown
   end
 
   def dump_model(channel) do

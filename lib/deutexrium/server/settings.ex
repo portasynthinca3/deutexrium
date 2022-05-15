@@ -173,7 +173,7 @@ defmodule Deutexrium.Server.Settings do
         [_, setting, sign, inc] = Regex.run(~r/int_(.+)([+-])(\d+)/, setting)
         setting = :erlang.binary_to_atom(setting)
         inc = :erlang.binary_to_integer(inc)
-        inc = if sign == "-" do -inc else inc end
+        inc = if sign == "-" do 0 - inc else inc end
         value = get_meta.(:cur) |> Map.get(setting)
         {setting, value + inc}
 

@@ -26,7 +26,6 @@ defmodule Deutexrium.MixProject do
       {:logger_file_backend, "~> 0.0.13"},
       {:cyanide, "~> 1.0"},
       {:markov, "~> 1.2.2"},
-      {:ex_hash_ring, "~> 6.0"},
       {:graceful_stop, "~> 0.2.0"},
       {:timex, "~> 3.0"},
       {:veritaserum, "~> 0.2.2"},

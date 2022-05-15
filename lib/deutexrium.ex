@@ -16,7 +16,7 @@ defmodule Deutexrium do
   def update_presence do
     Logger.info("updating presence")
     guild_cnt = Nostrum.Cache.GuildCache.all() |> Enum.count()
-    Api.update_status("", "#{guild_cnt} servers", 2)
+    Api.update_status(:online, "#{guild_cnt} servers", 2)
   end
 
   def presence_updater do
@@ -68,13 +68,11 @@ defmodule Deutexrium do
           {_, _, text} ->
             simulate_typing(text, msg.channel_id, false)
             Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
-          :error -> :ok
         end
       else
         # only train if it doesn't contain bot mentions
         case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
           :ok -> :ok
-          {:message, :error} -> :ok
           {:message, text} ->
             # see it it's impostor time
             impostor_rate = Server.Channel.get({msg.channel_id, msg.guild_id}, :impostor_rate)
@@ -312,7 +310,7 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}} = inter, _}) do
     used_space = Deutexrium.Persistence.used_space() |> div(1024)
     used_memory = :erlang.memory(:total) |> div(1024 * 1024)
-    %{guild: guild_server_cnt, channel: chan_server_cnt} = Server.Supervisor.server_count
+    %{guild: guild_server_cnt, channel: chan_server_cnt} = Server.RqRouter.server_count
     {uptime, _} = :erlang.statistics(:wall_clock)
     uptime = uptime |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
     been_created_for = ((DateTime.utc_now() |> DateTime.to_unix(:millisecond)) - (Nostrum.Cache.Me.get().id
@@ -330,7 +328,6 @@ defmodule Deutexrium do
         |> put_field("Known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Known channels", "#{Deutexrium.Persistence.chan_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
-        |> put_field("Internal request routers", "#{Server.Supervisor.router_cnt}", true)
         |> put_field("Internal guild servers", "#{guild_server_cnt}", true)
         |> put_field("Internal channel servers", "#{chan_server_cnt}", true)
         |> put_field("Total internal processes", "#{Process.list |> length()}", true)
@@ -507,7 +504,7 @@ defmodule Deutexrium do
 
   defp simulate_typing(text, channel, hack, guild \\ nil, username \\ nil)
 
-  defp simulate_typing(text, channel, hack, _guild = nil, _username = nil) do
+  defp simulate_typing(text, channel, hack, nil = _guild, nil = _username) do
     # calculate delay
     words = text |> String.split() |> length()
     delay = floor(words * ((80 + (10 * :rand.normal())) / 60) * 1000) # 80 +/-10 wpm
@@ -563,7 +560,7 @@ defmodule Deutexrium do
     Api.create_message(chan, content: text)
   end
 
-  defp try_sending_webhook(what = {user_id, _, text}, chan, {id, token}, guild) do
+  defp try_sending_webhook({user_id, _, text} = what, chan, {id, token}, guild) do
     # get username and avatar
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"
