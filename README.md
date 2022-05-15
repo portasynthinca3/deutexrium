@@ -32,5 +32,3 @@ If you own a Discord server that you'd like to be served by a self-hosted instan
 ## Modification
 This internal structure diagram might be helpful:\
 ![Internal structure](structure.png)
-
-Request routers (`RqR`) act as supervisors and message forwarders for guild, channel and voice channel servers. Handlers don't have to worry about the servers' state, whether they're loading, unloaded or being unloaded.
