@@ -215,10 +215,15 @@ defmodule Ctl do
       type: 2
     } | commands]
 
-    {:ok, _} = if guild == 0 do
+    result = if guild == 0 do
       Api.bulk_overwrite_global_application_commands(commands)
     else
       Api.bulk_overwrite_guild_application_commands(guild, commands)
+    end
+
+    case result do
+      {:ok, _} -> :ok
+      error -> error
     end
   end
 end
