@@ -19,7 +19,9 @@ defmodule Deutexrium.Sup do
       Deutexrium,
       Deutexrium.Influx.LoadCntr,
       Deutexrium.Influx,
-      {Registry, keys: :unique, name: Registry.Server}
+      Deutexrium.Influx.Logger,
+      {Registry, keys: :unique, name: Registry.Server},
+      Deutexrium.Presence
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -15,30 +15,12 @@ defmodule Deutexrium do
 
   @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
 
-  def update_presence do
-    Logger.info("updating presence")
-    guild_cnt = Nostrum.Cache.GuildCache.all() |> Enum.count()
-    Api.update_status(:online, "#{guild_cnt} servers", 2)
-  end
-
-  def presence_updater do
-    # update presence every 60s
-    receive do after 60 * 1000 ->
-      update_presence()
-      presence_updater()
-    end
-  end
-
-
-
   def start_link do
     Consumer.start_link(__MODULE__)
   end
 
   def handle_event({:READY, _, _}) do
-    spawn(&presence_updater/0)
-    spawn(&Deutexrium.Influx.Logger.log/0)
-    Logger.info("ready")
+    Logger.info("ready!")
   end
 
 

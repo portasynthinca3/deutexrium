@@ -85,9 +85,8 @@ defmodule Deutexrium.Influx do
 end
 
 defmodule Deutexrium.Influx.Logger do
-  @moduledoc """
-  Logs usage stats to InfluxDB
-  """
+  use GenServer
+  @moduledoc "Logs usage stats to InfluxDB"
 
   alias Deutexrium.Influx.Series
   require Logger
@@ -100,7 +99,13 @@ defmodule Deutexrium.Influx.Logger do
     }
   end
 
-  defp write do
+  def init(_) do
+    interval = Application.fetch_env!(:deutexrium, :log_interval)
+    Process.send_after(self(), :write, interval)
+    {:ok, interval}
+  end
+
+  def handle_info(:write, interval) do
     # collect stats
     {:ok, host} = :inet.gethostname
     %{guild: guilds, channel: channels} = Deutexrium.Server.RqRouter.server_count
@@ -121,16 +126,13 @@ defmodule Deutexrium.Influx.Logger do
       point(%Series.KnownGuilds{}, %{host: host}, %{value: k_guilds}),
     ]
     |> Deutexrium.Influx.write
+
+    Process.send_after(self(), :write, interval)
+    {:noreply, interval}
   end
 
-  def log do
-    interval = Application.fetch_env!(:deutexrium, :log_interval)
-    unless interval == 0 do
-      receive do after interval ->
-        write()
-        log()
-      end
-    end
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 end
 

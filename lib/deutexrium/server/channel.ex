@@ -96,7 +96,7 @@ defmodule Deutexrium.Server.Channel do
       # train local model
       sentiment = Sentiment.detect(message)
       model = if train do
-        Logger.info("channel-#{cid} server: training local model with sentiment=#{inspect sentiment}")
+        Logger.info("channel-#{cid} server: training local model sentiment=#{inspect sentiment}")
         train_model(model, message, author_id)
       else model
       end
