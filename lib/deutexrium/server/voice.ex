@@ -18,6 +18,13 @@ defmodule Deutexrium.Server.Voice do
   defp is_trigger(alts), do:
     alts |> Enum.any?(fn %{"text" => text} -> text in @triggers end)
 
+  def say(text, {conn, stream} = _conn) do
+    :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
+      op: "say",
+      text: text
+    })})
+  end
+
   @impl true
   def init(id) do
     # create http connection
@@ -62,7 +69,7 @@ defmodule Deutexrium.Server.Voice do
   end
 
   @impl true
-  def handle_info({:gun_ws, _, _, {:text, json}}, {{chan, _} = id, timeout, _} = state) do
+  def handle_info({:gun_ws, _, _, {:text, json}}, {{chan, _} = id, timeout, conn} = state) do
     %{"op" => op} = data = Jason.decode!(json) |> Enum.into(%{})
 
     case op do
@@ -76,12 +83,12 @@ defmodule Deutexrium.Server.Voice do
             # if text is a trigger
             {_, _, text} = Channel.generate(id)
             Logger.info("voice-#{chan}: trigger seq")
-            send(self(), {:say, text})
+            say(text, conn)
           else
             user = data |> Map.get("user") |> :erlang.binary_to_integer
             case Channel.handle_message(id, text, false, user) do
               :ok -> :ok
-              {:message, {_, _, text}} -> send(self(), {:say, text})
+              {:message, {_, _, text}} -> say(text, conn)
             end
           end
         end
@@ -95,15 +102,6 @@ defmodule Deutexrium.Server.Voice do
   @impl true
   def handle_info({:gun_down, _, _, :closed, _}, state) do
     {:stop, :voice_down, state}
-  end
-
-  @impl true
-  def handle_info({:say, text}, {_, timeout, {conn, stream}} = state) do
-    :gun.ws_send(conn, stream, {:text, Jason.encode!(%{
-      op: "say",
-      text: text
-    })})
-    {:noreply, state, timeout}
   end
 
   @impl true
