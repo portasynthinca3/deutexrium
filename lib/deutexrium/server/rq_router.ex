@@ -57,9 +57,13 @@ defmodule Deutexrium.Server.RqRouter do
       |> Enum.into(%{})
   end
 
-  @spec shutdown :: [:ok]
   def shutdown do
+    # shutdown servers
     Registry.select(Registry.Server, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      |> Enum.map(& &1 |> ensure |> GenServer.cast({:shutdown, true}))
+      |> Stream.filter(fn {type, _} -> type == :channel or type == :guild end)
+      |> Stream.each(& &1 |> ensure |> GenServer.call(:shutdown))
+
+    # stop application
+    Application.stop(:deutexrium)
   end
 end

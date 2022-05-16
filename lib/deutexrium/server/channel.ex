@@ -90,7 +90,7 @@ defmodule Deutexrium.Server.Channel do
     # credo:disable-for-next-line
     unless by_bot and get_setting({id, meta}, :ignore_bots) do
       # check training settings
-      train = id == 0 or get_setting({id, meta}, :train)
+      train = cid == 0 or get_setting({id, meta}, :train)
       global_train = id != 0 and get_setting({id, meta}, :global_train)
 
       # train local model
@@ -194,93 +194,61 @@ defmodule Deutexrium.Server.Channel do
   end
 
   @impl true
-  def handle_cast({:shutdown, freeze}, {{id, _}, _, _, _} = state) do
-    handle_shutdown(state, not freeze)
-    if freeze do
-      Logger.notice("channel-#{id} server: freezing")
-      infinite_loop()
-    end
+  def handle_call(:shutdown, _from, state) do
+    dump(state)
+    {:stop, :shutdown, :ok, state}
   end
 
   @impl true
   def handle_info(:timeout, state) do
-    handle_shutdown(state, true)
+    dump(state)
+    {:stop, :shutdown, state}
   end
 
-  defp handle_shutdown({{id, _}, meta, model, _} = _state, do_exit) do
-    # unload everything
+  defp dump({{id, _}, meta, model, _} = _state) do
     Logger.info("channel-#{id} server: unloading")
     Meta.dump!(id, meta)
     Model.dump!(id, model)
     Logger.info("channel-#{id} server: unloaded")
-
-    # exit
-    if do_exit do
-      exit(:normal)
-    end
   end
-
-  defp infinite_loop do
-    infinite_loop()
-  end
-
-
 
   # ===== API =====
 
-
-
-
-
   @type server_id() :: {integer(), integer()}
+  @type gen_result() :: {integer(), Sentiment.sentiment(), String.t()}
 
   @spec get_meta(server_id()) :: Meta.t()
-  def get_meta(id) when (is_integer(id) or is_tuple(id)) do
-    id |> RqRouter.route_to_chan(:get_meta)
-  end
+  def get_meta(id) when is_tuple(id), do: id |> RqRouter.route_to_chan(:get_meta)
 
   @spec get_model_stats(server_id()) :: Model.t()
-  def get_model_stats(id) when (is_integer(id) or is_tuple(id)) do
-    id |> RqRouter.route_to_chan(:get_model)
-  end
+  def get_model_stats(id) when is_tuple(id), do: id |> RqRouter.route_to_chan(:get_model)
 
-  @spec handle_message(server_id(), String.t(), boolean(), integer()) :: :ok | {:message, String.t()}
-  def handle_message(id, msg, by_bot, author_id) when (is_integer(id) or is_tuple(id)) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
+  @spec handle_message(server_id(), String.t(), boolean(), integer()) :: :ok | {:message, gen_result()}
+  def handle_message(id, msg, by_bot, author_id) when is_tuple(id) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
     id |> RqRouter.route_to_chan({:message, msg, by_bot, author_id})
   end
 
-  @spec generate(server_id(), Sentiment.sentiment()) :: {integer(), Sentiment.sentiment(), String.t()}
-  def generate(id, sentiment \\ :nosentiment, author \\ nil) when (is_integer(id) or is_tuple(id)) do
+  @spec generate(server_id(), Sentiment.sentiment(), integer()|nil) :: gen_result()|:error
+  def generate(id, sentiment \\ :nosentiment, author \\ nil) when is_tuple(id) do
     id |> RqRouter.route_to_chan({:generate, sentiment, author})
   end
 
   @spec reset(server_id(), atom()) :: :ok
-  def reset(id, what) when (is_integer(id) or is_tuple(id)) and is_atom(what) do
-    id |> RqRouter.route_to_chan({:reset, what})
-  end
+  def reset(id, what) when is_tuple(id) and is_atom(what), do: id |> RqRouter.route_to_chan({:reset, what})
 
   @spec set(server_id(), atom(), any()) :: :ok
-  def set(id, setting, value) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
+  def set(id, setting, value) when is_tuple(id) and is_atom(setting), do:
     id |> RqRouter.route_to_chan({:set, setting, value})
-  end
 
   @spec get(server_id(), atom()) :: any()
-  def get(id, setting) when (is_integer(id) or is_tuple(id)) and is_atom(setting) do
-    id |> RqRouter.route_to_chan({:get, setting})
-  end
+  def get(id, setting) when is_tuple(id) and is_atom(setting), do: id |> RqRouter.route_to_chan({:get, setting})
 
   @spec token_stats(server_id()) :: String.t()
-  def token_stats(id) when (is_integer(id) or is_tuple(id)) do
-    id |> RqRouter.route_to_chan(:token_stats)
-  end
+  def token_stats(id) when is_tuple(id), do: id |> RqRouter.route_to_chan(:token_stats)
 
-  @spec get(server_id(), atom()) :: :ok
-  def forget(id, token) when is_integer(id) or is_tuple(id) do
-    id |> RqRouter.route_to_chan({:forget, token})
-  end
+  @spec forget(server_id(), String.t()) :: :ok
+  def forget(id, token) when is_tuple(id), do: id |> RqRouter.route_to_chan({:forget, token})
 
   @spec export(server_id(), atom()) :: binary()
-  def export(id, format) when is_integer(id) or is_tuple(id) do
-    id |> RqRouter.route_to_chan({:export, format})
-  end
+  def export(id, format) when is_tuple(id), do: id |> RqRouter.route_to_chan({:export, format})
 end

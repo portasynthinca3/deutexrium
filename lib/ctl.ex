@@ -5,17 +5,11 @@ defmodule Ctl do
 
   alias Nostrum.Api
 
-  def shutdown do
-    Deutexrium.Server.RqRouter.shutdown
-  end
+  defdelegate shutdown, to: Deutexrium.Server.RqRouter
+  defdelegate dump_model(channel), to: Deutexrium.Persistence.Model, as: :load!
 
-  def dump_model(channel) do
-    Deutexrium.Persistence.Model.load!(channel)
-  end
-
-  def unload(resource) do
+  def unload(resource), do:
     GenServer.cast({:via, Registry, {Registry.Server, resource}}, {:shutdown, false})
-  end
 
   def add_slash_commands(guild \\ 0) do
     commands = []

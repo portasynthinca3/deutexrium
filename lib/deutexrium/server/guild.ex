@@ -59,65 +59,40 @@ defmodule Deutexrium.Server.Guild do
   end
 
   @impl true
-  def handle_cast({:shutdown, freeze}, {id, _, _} = state) do
-    handle_shutdown(state, not freeze)
-    if freeze do
-      Logger.notice("guild-#{id} server: freezing")
-      infinite_loop()
-    end
+  def handle_call(:shutdown, _from, state) do
+    dump(state)
+    {:stop, :shutdown, :ok, state}
   end
 
   @impl true
   def handle_info(:timeout, state) do
-    handle_shutdown(state, true)
+    dump(state)
+    {:stop, :shutdown, state}
   end
 
-  defp handle_shutdown({id, meta, _} = _state, do_exit) do
+  defp dump({id, meta, _} = _state) do
     # unload everything
     Logger.info("guild-#{id} server: unloading")
     GuildMeta.dump!(id, meta)
     Logger.info("guild-#{id} server: unloaded")
-
-    # exit
-    if do_exit do
-      exit(:normal)
-    end
   end
-
-  defp infinite_loop do
-    infinite_loop()
-  end
-
-
 
   # ===== API =====
 
-
-
-
-
   @spec get_meta(integer()) :: GuildMeta.t()
-  def get_meta(id) when is_integer(id) do
-    id |> RqRouter.route_to_guild(:get_meta)
-  end
+  def get_meta(id) when is_integer(id), do: id |> RqRouter.route_to_guild(:get_meta)
 
   @spec reset(integer(), atom()) :: :ok
-  def reset(id, what) when is_integer(id) and is_atom(what) do
-    id |> RqRouter.route_to_guild({:reset, what})
-  end
+  def reset(id, what) when is_integer(id) and is_atom(what), do: id |> RqRouter.route_to_guild({:reset, what})
 
   @spec scoreboard_add_one(integer(), integer()) :: :ok
-  def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author) do
+  def scoreboard_add_one(id, author) when is_integer(id) and is_integer(author), do:
     id |> RqRouter.route_to_guild({:scoreboard, author})
-  end
 
   @spec set(integer(), atom(), any()) :: :ok
-  def set(id, setting, value) when is_integer(id) and is_atom(setting) do
+  def set(id, setting, value) when is_integer(id) and is_atom(setting), do:
     id |> RqRouter.route_to_guild({:set, setting, value})
-  end
 
   @spec export(integer(), atom()) :: binary()
-  def export(id, format) when is_integer(id) and is_atom(format) do
-    id |> RqRouter.route_to_guild({:export, format})
-  end
+  def export(id, format) when is_integer(id) and is_atom(format), do: id |> RqRouter.route_to_guild({:export, format})
 end
