@@ -18,7 +18,7 @@ defmodule Deutexrium.Server.Channel do
     end
   end
 
-  defp generate_message(%Markov{} = model, sentiment \\ :nosentiment, author \\ nil) do
+  defp generate_message(%Markov{} = model, sentiment, author \\ nil) do
     try do
       start = cond do
         author == nil and sentiment == :nosentiment -> [:start, :start]

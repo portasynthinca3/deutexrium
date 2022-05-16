@@ -13,23 +13,17 @@ defmodule Deutexrium.Server.RqRouter do
   def ensure({type, id} = what) do
     name = {:via, Registry, {Registry.Server, what}}
 
-    case Registry.lookup(Registry.Server, what) do
-      # not started
-      [] ->
-        # get server module
-        module = case type do
-          :channel -> Server.Channel
-          :guild -> Server.Guild
-          :voice -> Server.Voice
-          :settings -> Server.Settings
-        end
-        # start it
-        GenServer.start(module, id, name: name)
-        name
+      # get server module
+      module = case type do
+        :channel -> Server.Channel
+        :guild -> Server.Guild
+        :voice -> Server.Voice
+        :settings -> Server.Settings
+      end
 
-      # started
-      [{_pid, nil}] -> name
-    end
+      # start it (returns an error if already srarted, which is okay)
+      GenServer.start(module, id, name: name)
+      name
   end
 
   @spec route({server_type, integer | {integer, integer}}, any) :: any

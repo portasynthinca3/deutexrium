@@ -13,6 +13,10 @@ defmodule Ctl do
     Deutexrium.Persistence.Model.load!(channel)
   end
 
+  def unload(resource) do
+    GenServer.cast({:via, Registry, {Registry.Server, resource}}, {:shutdown, false})
+  end
+
   def add_slash_commands(guild \\ 0) do
     commands = []
 

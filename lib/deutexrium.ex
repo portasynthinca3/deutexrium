@@ -4,6 +4,8 @@ defmodule Deutexrium do
   functions accordingly.
   """
 
+  @version Mix.Project.config[:version]
+
   use Nostrum.Consumer
   require Logger
   alias Nostrum.Api
@@ -199,8 +201,8 @@ defmodule Deutexrium do
 
         |> put_field("REGULAR COMMANDS", "can be run by anybody")
         |> put_field("help", ":information_source: send this message", true)
-        |> put_field("status", ":green_circle: show the current stats", true)
-        |> put_field("stats", ":yellow_circle: show how much resources I use", true)
+        |> put_field("status", ":green_circle: show key statistics", true)
+        |> put_field("stats", ":yellow_circle: boring info for nerds", true)
         |> put_field("gen <count>", ":1234: generate <count> (1 if omitted) messages using the current channel's model immediately", true)
         |> put_field("gen_by [sentiment] [@user]", ":face_with_monocle: generate a message with a specific sentiment and/or authorship using the current channel's model immediately", true)
         |> put_field("gen_from #channel", ":level_slider: immediately generate a message using the mentioned channel's model", true)
@@ -322,15 +324,16 @@ defmodule Deutexrium do
         |> put_color(0xe6f916)
         |> put_url("https://deut.portasynthinca3.me/commands/stats")
 
-        |> put_field("Space taken up by user data", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
+        |> put_field("User data size", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
         |> put_field("Uptime", "#{uptime}", true)
         |> put_field("Time since I was created", "#{been_created_for}", true)
         |> put_field("Known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
         |> put_field("Known channels", "#{Deutexrium.Persistence.chan_cnt}", true)
         |> put_field("Used RAM", "#{used_memory} MiB", true)
-        |> put_field("Internal guild servers", "#{guild_server_cnt}", true)
-        |> put_field("Internal channel servers", "#{chan_server_cnt}", true)
+        |> put_field("Guild servers", "#{guild_server_cnt}", true)
+        |> put_field("Channel servers", "#{chan_server_cnt}", true)
         |> put_field("Total internal processes", "#{Process.list |> length()}", true)
+        |> put_field("Version", "#{@version}", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end

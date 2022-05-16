@@ -194,7 +194,7 @@ defmodule Deutexrium.Server.Settings do
       true ->
         {meta, map} = case state.context do
           :guild -> {get_meta.(:guild), %{true: false, false: true}}
-          channel_id -> {get_meta.(:channel), %{true: false, false: nil, nil: true}}
+          _channel -> {get_meta.(:channel), %{true: false, false: nil, nil: true}}
         end
         setting = :erlang.binary_to_atom(setting)
         current = meta |> Map.get(setting)
