@@ -94,7 +94,7 @@ defmodule Deutexrium.Server.Settings do
       |> Map.values
       |> Enum.filter(&(&1.type == 0)) # leave text ones only
       |> Enum.sort_by(&{&1.id != state.channel, &1.id}) # current channel first, other chanels by id
-      |> Enum.slice(0..24) # limit to 24
+      |> Enum.take(24) # limit to 24
 
     # get settings by category
     {nonbin, bin} = Enum.split_with(@settings, &Map.has_key?(&1, :type))
