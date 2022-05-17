@@ -65,5 +65,6 @@ defmodule Deutexrium.Server.RqRouter do
 
     # stop application
     Application.stop(:deutexrium)
+    Application.stop(:nostrum)
   end
 end

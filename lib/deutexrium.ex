@@ -59,7 +59,7 @@ defmodule Deutexrium do
           :ok -> :ok
           {:message, text} ->
             # see it it's impostor time
-            impostor_rate = Server.Channel.get({msg.channel_id, msg.guild_id}, :impostor_rate) or 100
+            impostor_rate = Server.Channel.get({msg.channel_id, msg.guild_id}, :impostor_rate)
             impostor_rate = if impostor_rate == nil, do: 0, else: impostor_rate
             webhook_data = if impostor_rate > 0 and :rand.uniform() <= impostor_rate / 100.0 do
                 Server.Channel.get_meta({msg.channel_id, msg.guild_id}).webhook_data
