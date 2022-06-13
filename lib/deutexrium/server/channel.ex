@@ -18,7 +18,7 @@ defmodule Deutexrium.Server.Channel do
     end
   end
 
-  defp generate_message(%Markov{} = model, sentiment, author \\ nil) do
+  defp generate_message(%Markov{} = model, sentiment, filter, author \\ nil) do
     try do
       start = cond do
         author == nil and sentiment == :nosentiment -> [:start, :start]
@@ -26,10 +26,20 @@ defmodule Deutexrium.Server.Channel do
         author == nil and sentiment != :nosentiment -> [:start, {:sentiment, sentiment}]
         author != nil and sentiment != :nosentiment -> [{:sentiment, sentiment}, {:author, author}]
       end
+
+      # generate tokens
       tokens = model |> Markov.generate_tokens(start -- [:start, :start], start)
       [{:sentiment, sentiment}, {:author, author} | text_tokens] = tokens
       Deutexrium.Influx.LoadCntr.add(:gen)
-      {author, sentiment, text_tokens |> Enum.join(" ")}
+
+      # filter message
+      text = text_tokens |> Enum.join(" ")
+      text = if filter do
+        no_mentions = Regex.replace(~r/<(#|@|@&|@!)[0-9]+>/, text, "**[mention removed]**")
+        Regex.replace(~r/https?:\/\/.*\b/, no_mentions, "**[link removed]**")
+      else text end
+
+      {author, sentiment, text}
     rescue
       _ -> :error
     end
@@ -113,7 +123,8 @@ defmodule Deutexrium.Server.Channel do
       autorate = get_setting({id, meta}, :autogen_rate)
       reply = if (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) do
         Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
-        params = generate_message(model.data, sentiment)
+        filter = cid == 0 or get_setting({id, meta}, :remove_mentions)
+        params = generate_message(model.data, filter, sentiment)
         {:message, params}
       else
         :ok
@@ -132,15 +143,9 @@ defmodule Deutexrium.Server.Channel do
   @impl true
   def handle_call({:generate, sentiment, author}, _from, {{cid, _} = id, meta, model, timeout} = state) do
     Logger.info("channel-#{cid} server: generating on demand with sentiment=#{inspect sentiment} and author=#{inspect author}")
-    case generate_message(model.data, sentiment, author) do
-      {a, s, text} ->
-        # remove mentions in the global model and if asked
-        text = if cid == 0 or get_setting({id, meta}, :remove_mentions) do
-          Regex.replace(~r/<(#|@|@&|@!)[0-9]+>/, text, "**[mention removed]**")
-        else text end
-
-        {:reply, {a, s, text}, state, timeout}
-
+    filter = cid == 0 or get_setting({id, meta}, :remove_mentions)
+    case generate_message(model.data, sentiment, filter, author) do
+      {a, s, text} ->{:reply, {a, s, text}, state, timeout}
       _ -> {:reply, :error, state, timeout}
     end
   end

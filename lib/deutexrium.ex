@@ -393,7 +393,7 @@ defmodule Deutexrium do
             end)
           |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
           |> Enum.reduce(embed, fn {k, v}, acc ->
-        acc |> put_field("`#{k}`", "#{v} occurences", true)
+        acc |> put_field("`#{k}`", "#{v} occurrences", true)
       end)
 
       Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})

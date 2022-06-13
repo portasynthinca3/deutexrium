@@ -25,7 +25,7 @@ defmodule Deutexrium.Server.Settings do
       name: "Ignore bots"},
 
     %{value: :remove_mentions,
-      name: "Remove mentions"},
+      name: "Remove mentions and links"},
 
     %{value: :autogen_rate,
       type: :int,
