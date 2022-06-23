@@ -124,7 +124,7 @@ defmodule Deutexrium.Server.Channel do
       reply = if (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) do
         Logger.info("channel-#{cid} server: automatic generation with sentiment=#{inspect sentiment}")
         filter = cid == 0 or get_setting({id, meta}, :remove_mentions)
-        params = generate_message(model.data, filter, sentiment)
+        params = generate_message(model.data, sentiment, filter)
         {:message, params}
       else
         :ok

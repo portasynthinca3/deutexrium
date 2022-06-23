@@ -27,3 +27,4 @@ deutexrium-*.tar
 /bup*.tar*
 build.sh
 ltemplate.txt
+release.tar.gz
