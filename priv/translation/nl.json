@@ -1,0 +1,187 @@
+{
+    "command": {
+        "reset": {
+            "title": "reset",
+            "description": "Iets resetten",
+            "option": {
+                "model": {
+                    "title": "model",
+                    "description": "Reset het generatie model van dit kanaal"
+                },
+                "settings": {
+                    "title": "instellingen",
+                    "description": "Reset de instellingen van dit kanaal"
+                },
+                "server": {
+                    "title": "server",
+                    "description": "Reset de instellingen van deze server"
+                }
+            }
+        },
+        "status": {
+            "title": "status",
+            "description": "Laat informatie over het model zien"
+        },
+        "stats": {
+            "title": "stastistieken",
+            "description": "Laat het CPU verbruik van het model zien, dit is niet heel interessant"
+        },
+        "gen_global": {
+            "title": "gen_globaal",
+            "description": "Genereer een bericht met het globale model"
+        },
+        "donate": {
+            "title": "doneer",
+            "description": "Een manier om mijn ontwikkeling te steunen"
+        },
+        "privacy": {
+            "title": "privacy",
+            "description": "Privacy beleid"
+        },
+        "support": {
+            "title": "support",
+            "description": "Manieren om hulp te krijgen"
+        },
+        "scoreboard": {
+            "title": "scorebord",
+            "description": "Top 10 van de meest actieve leden van de server"
+        },
+        "impostor": {
+            "title": "bedrieger",
+            "description": "Zet bedrieg modus aan"
+        },
+        "settings": {
+            "title": "instellingen",
+            "description": "Configureer instellingen"
+        },
+        "help": {
+            "title": "help",
+            "description": "Overzicht van commandos"
+        },
+        "generate": {
+            "title": "genereer",
+            "description": "Genereer bericht(en) met het model van het huidige kanaal",
+            "option": {
+                "count": {
+                    "title": "aantal",
+                    "description": "Het aantal berichten om te genereren; Standaard is 1"
+                }
+            }
+        },
+        "generate_from": {
+            "title": "genereer_uit",
+            "description": "Genereer een bericht uit het model van het geselecteerde kanaal",
+            "option": {
+                "channel": {
+                    "title": "kanaal",
+                    "description": "Het kanaal om te gebruiken"
+                }
+            }
+        },
+        "gen_by_them": {
+            "title": "Bericht van iemand genereren"
+        }
+    },
+    "response": {
+        "generate": {
+            "gen_failed": ":x: **Unsuccesvolle generatie**",
+            "val_too_big": ":x: **Waarde te groot**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+        },
+        "gen_by_them": {
+            "normal": ":white_check_mark: **Het bericht zal binnenkort verstuurd worden**",
+            "no_impostor": ":question: **Het antwoord zal binnenkort als normaal bericht verstuurd worden. Probeer [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_data": ":x: Ik heb nog geen berichten ontvangen van $1"
+        },
+        "help": {
+            "header": "Commandos van Deuterium",
+            "sub": "Gedetailleerde help op https://deut.portasynthinca3.me/",
+            "regular": "Reguliere Commandos",
+            "regular_sub": "Kunnen door iedereen uitgevoerd worden",
+            "help": ":information_source: Stuur dit bericht",
+            "status": ":green_circle: Laat statistieken van het kanaal zien",
+            "stats": ":yellow_circle: Saaie informatie voor nerds",
+            "generate": ":1234: Genereer <aantal> (Als het onbreekt dan 1) berichten met het model van het huidige kanaal",
+            "generate_from": ":level_slider: Genereer een bericht met het model van het geselecteerde kanaal",
+            "gen_global": ":rocket: Genereer een bericht met het globale model",
+            "donate": ":question: Manieren om mijn ontwikkeling te steunen",
+            "privacy": ":lock: Mijn privacy beleid",
+            "support": ":thinking: Manieren om hulp te krijgen",
+            "scoreboard": ":100: Top 10 meest actieve leden van de server",
+            "admin": "Administrator Commandos",
+            "admin_sub": "Kunnen alleen gebruikt worden met de \"administrator\" privilege",
+            "settings": ":gear: Laat het instellingenmenu zien",
+            "impostor": "<:amogus:887939317371138048> Zet bedriegmodus aan"
+        },
+        "donate": {
+            "title": "Manieren om Deuterium te ondersteunen",
+            "share": ":loudspeaker: Deel de bot met je vrienden",
+            "invite": "....of stuur een invite naar andere servers",
+            "patreon": ":money_mouth: Doneer op Patreon",
+            "paypal": ":money_mouth: Doneer via PayPal",
+            "dbl": ":speaking_head: Stem op DBL"
+        },
+        "support": {
+            "title": "Deuterium Hulp",
+            "server": ":eye: Hulp server",
+            "email": ":e_mail: Email"
+        },
+        "status": {
+            "title": "Deuterium Status",
+            "this_chan": "Geleerde berichten",
+            "global": "Berichten toegevoegd aan het globale model",
+            "global_total": "Totale aantal berichten in het globale model"
+        },
+        "stats": {
+            "title": "Deuterium CPU verbruik",
+            "data_size": {
+                "title": "Gebruiker datagroote",
+                "value": "$1 KiB ($2 MiB)"
+            },
+            "uptime": "Uptime",
+            "existence": "Tijd sinds ik gemaakt ben",
+            "servers": "Bekende servers",
+            "channels": "Bekende kanalen",
+            "ram": {
+                "title": "Gebruikt RAM",
+                "value": "$1 MiB"
+            },
+            "guild_servers": "Discord server OTP servers",
+            "channel_servers": "Discord channel OTP servers",
+            "processes": "Totale aantal BEAM processen",
+            "version": "Versie"
+        },
+        "scoreboard": {
+            "title": "Deuterium scorebord",
+            "row": "$1 - $2 berichten"
+        },
+        "reset": {
+            "settings": ":white_check_mark: **Reset kanaal instellingen**",
+            "model": ":white_check_mark: **Reset kanaal modus**",
+            "server": ":white_check_mark: **Reset server instellingen**"
+        },
+        "impostor": {
+            "activated": ":white_check_mark: **Bedriegmodus geactiveerd**",
+            "webhook_error": ":x: **Bot ontbreekt de \"Manage Webhooks\" toestemming**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "unknown_error": ":x: **Onbekende fout**"
+        },
+        "missing_admin": ":x: **Ontbrekende \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+    },
+    "setting": {
+        "name": {
+            "train": "Train lokaal model",
+            "global_train": "Train globaal model",
+            "ignore_bots": "Negeer bots",
+            "remove_mentions": "Verwijder pings",
+            "autogen_rate": "Automatische generatie frequentie",
+            "max_gen_len": "Maximale /generate lengte",
+            "impostor_rate": "Bedrieg frequentie"
+        },
+        "bin_value": {
+            "on": "aan",
+            "off": "uit",
+            "no_override": "geen override"
+        },
+        "server": "Toegepast op alle kanalen, tenzij ze een override hebben",
+        "current": "Huidig kanaal"
+    }
+}

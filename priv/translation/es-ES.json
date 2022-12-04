@@ -1,0 +1,220 @@
+{
+    "command": {
+        "reset": {
+            "title": "restaurar",
+            "description": "Restaurar algo",
+            "option": {
+                "model": {
+                    "title": "modelo",
+                    "description": "Restaurar el modelo de generación de este canal"
+                },
+                "settings": {
+                    "title": "ajustes",
+                    "description": "Restaurar la configuración de este canal"
+                },
+                "server": {
+                    "title": "servidor",
+                    "description": "Restaurar la configuración de este servidor"
+                }
+            }
+        },
+        "status": {
+            "title": "estado",
+            "description": "Información del estado del modelo clave"
+        },
+        "stats": {
+            "title": "estadisticas",
+            "description": "Mi uso de recursos (No muy interesante)"
+        },
+        "gen_global": {
+            "title": "gen_global",
+            "description": "Generar un mensaje usando el modelo global"
+        },
+        "donate": {
+            "title": "donar",
+            "description": "Contribuir a mis proyectos"
+        },
+        "privacy": {
+            "title": "privacidad",
+            "description": "Política de privacidad"
+        },
+        "support": {
+            "title": "soporte",
+            "description": "Ayuda y soporte"
+        },
+        "scoreboard": {
+            "title": "marcador",
+            "description": "Top 10 usuarios más activos de este servidor"
+        },
+        "impostor": {
+            "title": "impostor",
+            "description": "Habilitar modo impostor"
+        },
+        "settings": {
+            "title": "ajustes",
+            "description": "Configuración"
+        },
+        "help": {
+            "title": "ayuda",
+            "description": "Sumario de comandos"
+        },
+        "generate": {
+            "title": "generar",
+            "description": "Generar mensaje(s) usando el modelo del canal actual",
+            "option": {
+                "count": {
+                    "title": "número",
+                    "description": "Número de mensajes, por defecto 1"
+                }
+            }
+        },
+        "generate_from": {
+            "title": "generar_desde",
+            "description": "Generar mensaje usando el modelo del canal especificado",
+            "option": {
+                "channel": {
+                    "title": "canal",
+                    "description": "El canal"
+                }
+            }
+        },
+        "gen_by_them": {
+            "title": "Generar mensaje por él"
+        }
+    },
+
+    "response": {
+        "generate": {
+            "gen_failed": ":x: **Fallo de generación**",
+            "val_too_big": ":x: **Valor demasiado grande**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+        },
+        "gen_by_them": {
+            "normal": ":white_check_mark: **La respuesta llegará pronto**",
+            "no_impostor": ":question: **La respuesta será enviada como un mensaje normal en breve. Prueba [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_data": ":x: No he oído nada de $1"
+        },
+        "help": {
+            "header": "Comandos Deuterium",
+            "sub": "Información de ayuda más extensa en https://deut.portasynthinca3.me/",
+            "regular": "COMANDOS COMUNES",
+            "regular_sub": "Pueden ser ejecutados por cualquiera",
+            "help": ":information_source: enviar este mensaje",
+            "status": ":green_circle: enseñar estadísiticas clave",
+            "stats": ":yellow_circle: información aburrida para frikis",
+            "generate": ":1234: generar <cantidad> (1 por defecto) mensajes usando el modelo del canal actual",
+            "generate_from": ":level_slider: generar un mensaje inmediatamente usando el modelo del canal especificado",
+            "gen_global": ":rocket: generar un mensaje inmediatamente usando el modelo global",
+            "donate": ":question: contribuir a mis proyectos",
+            "privacy": ":lock: política de privacidad",
+            "support": ":thinking: ayuda y soporte",
+            "scoreboard": ":100: Top 10 usuarios más activos de este servidor",
+            "admin": "COMANDOS ADMINISTRACIÓN",
+            "admin_sub": "solo pueden ser ejecutadas por usuarios con el privilegio \"administrator\"",
+            "settings": ":gear: mostrar el menú de configuración",
+            "impostor": "<:amogus:887939317371138048> habilitar modo impostor"
+        },
+        "donate": {
+            "title": "Cómo apoyar a Deuterium",
+            "share": ":loudspeaker: cuéntales a tus amigos sobre Deuterium",
+            "invite": "...o invítalo a otros servidores",
+            "patreon": ":money_mouth: donar en Patreon",
+            "paypal": ":money_mouth: donar vía PayPal",
+            "dbl": ":speaking_head: votar en DBL"
+        },
+        "privacy": {
+            "title": "Política Privacidad Deuterium",
+            "scope": {
+                "title": "1. SCOPE",
+                "paragraph": "This message describes how the Deuterium Discord bot (\"Deuterium\", \"the bot\", \"bot\"), its creator (\"I\", \"me\") processes its Users' (\"you\") data"
+            },
+            "auth": {
+                "title": "2. AUTHORIZATION",
+                "paragraph": "When you authorize the bot, it is added as a member of the server you've chosen. It has no access to your profile, direct messages or anything that is not related to the selected server."
+            },
+            "processing": {
+                "title": "3. DATA PROCESSING",
+                "paragraph": "Deuterium processes messages it receives in server channels according to these rules:\n- if the channel has its \"message collection\" setting set to \"on\", it trains the model on this message and saves said model to disk\n- if the channel has its \"global message collection\" setting set to \"on\", it trains the global model on this message and saves said model do disk"
+            },
+            "storage": {
+                "title": "4. DATA STORAGE",
+                "paragraph": "Deuterium stores the following data:\n- Channel settings and statistics (e.g. is message collection allowed, the total number of collected messages, etc.). This data can be viewed using the `/status` and `/settings` commands\n- Local Markov chain model which consists of a set of probabilities of one word coming after another word\n- Global Markov chain model which stores content described above\n- Channel, user and server IDs\n- User-to-message-count relationship for `/scoreboard`\n- Raw message content to re-train the models in case the format changes\nDeuterium does **not** store the following data:\n- User nicknames/tags\n- Any other data not mentioned in the list above"
+            },
+            "contacting": {
+                "title": "5. CONTACTING",
+                "paragraph": "Please refer to `/support`"
+            },
+            "removal": {
+                "title": "6. DATA REMOVAL",
+                "paragraph": "Due to the nature of Markov chains, it's unfortunately not possible to remove a certain section of the data I store. Only the whole model can be reset.\nIf you wish to reset the channel model, you may use the `/reset channel model` command.\nIf you wish to reset the global model, please reach out to `/support`."
+            },
+            "disclosure": {
+                "title": "7. DATA DISCLOSURE",
+                "paragraph": "I do not disclose collected data to anyone. Furthermore, I do not look at it myself."
+            }
+        },
+        "support": {
+            "title": "Soporte Deuterium",
+            "server": ":eye: Servidor de soporte",
+            "email": ":e_mail: Correo electrónico"
+        },
+        "status": {
+            "title": "Estado Deuterium",
+            "this_chan": "Mensajes aprendidos",
+            "global": "Mensajes contribuidos al modelo global",
+            "global_total": "Mensajes en total en el modelo global"
+        },
+        "stats": {
+            "title": "Uso de recursos Deuterium",
+            "data_size": {
+                "title": "Tamaño de datos de usuario",
+                "value": "$1 KiB ($2 MiB)"
+            },
+            "uptime": "Tiempo en ejecución",
+            "existence": "Tiempo desde que fui creado",
+            "servers": "Servidores conocidos",
+            "channels": "Canales conocidos",
+            "ram": {
+                "title": "RAM en uso",
+                "value": "$1 MiB"
+            },
+            "guild_servers": "Servidores OTP servidores de Discord",
+            "channel_servers": "Servidores OTP canales de Discord",
+            "processes": "Procesos BEAM",
+            "version": "Versión"
+        },
+        "scoreboard": {
+            "title": "Marcador Deuterium",
+            "row": "$1 - $2 mensajes"
+        },
+        "reset": {
+            "settings": ":white_check_mark: **Configuración del canal restaurada**",
+            "model": ":white_check_mark: **Modelo del canal restaurada**",
+            "server": ":white_check_mark: **Configuración del servidor restaurada**"
+        },
+        "impostor": {
+            "activated": ":white_check_mark: **impersonificación activada**",
+            "webhook_error": ":x: **El bot carece del permiso \"Gestionar Webhooks\"**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "unknown_error": ":x: **Error desconocido**"
+        },
+        "missing_admin": ":x: **Se requiere el privilegio \"administrator\"**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+    },
+
+    "setting": {
+        "name": {
+            "train": "Entrenar modelo local",
+            "global_train": "Entrenar modelo global",
+            "ignore_bots": "Ignorar bots",
+            "remove_mentions": "Eliminar menciones",
+            "autogen_rate": "Tasa de generación automática",
+            "max_gen_len": "Valor máximo para /generate",
+            "impostor_rate": "Tasa de impersonificación"
+        },
+        "bin_value": {
+            "on": "si",
+            "off": "no",
+            "no_override": "no anular"
+        },
+        "server": "Aplicado en todos los canales salvo sea anulado específicamente",
+        "current": "Canal actual"
+    }
+}

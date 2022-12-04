@@ -1,0 +1,220 @@
+{
+    "command": {
+        "reset": {
+            "title": "zresetuj",
+            "description": "zresetuj coś",
+            "option": {
+                "model": {
+                    "title": "model",
+                    "description": "zresetuj model tego kanału"
+                },
+                "settings": {
+                    "title": "ustawienia",
+                    "description": "zresetuj ustawienia dla tego kanału"
+                },
+                "server": {
+                    "title": "serwer",
+                    "description": "zresetuj ustawienia dla tego serwera"
+                }
+            }
+        },
+        "status": {
+            "title": "status",
+            "description": "kluczowe informacje o stanie modelu"
+        },
+        "stats": {
+            "title": "statystyki",
+            "description": "użycie zasobów, nic zbytnio interesującego"
+        },
+        "gen_global": {
+            "title": "wygen_globalnie",
+            "description": "wygeneruj wiadomość używając globalnego modelu"
+        },
+        "donate": {
+            "title": "dotacje",
+            "description": "sposoby wsparcia mojego rozwoju"
+        },
+        "privacy": {
+            "title": "prywatność",
+            "description": "polityka prywatności"
+        },
+        "support": {
+            "title": "wsparcie",
+            "description": "sposoby otrzymania wsparcia"
+        },
+        "scoreboard": {
+            "title": "wyniki",
+            "description": "top-10 najbardziej aktywnych użytkowników na tym serwerze"
+        },
+        "impostor": {
+            "title": "impostor",
+            "description": "włącz tryb impersonacji"
+        },
+        "settings": {
+            "title": "ustawienia",
+            "description": "skonfiguruj ustawienia"
+        },
+        "help": {
+            "title": "pomoc",
+            "description": "podsumowanie poleceń"
+        },
+        "generate": {
+            "title": "wygeneruj",
+            "description": "wygeneruj wiadomość(ści) używając modelu dla tego kanału",
+            "option": {
+                "count": {
+                    "title": "ilość",
+                    "description": "ilość wiadomości do wygenerowania; domyślnie 1"
+                }
+            }
+        },
+        "generate_from": {
+            "title": "wygeneruj_z",
+            "description": "wygeneruj wiadomość używając modelu danego kanału",
+            "option": {
+                "channel": {
+                    "title": "kanał",
+                    "description": "kanał, którego modelu użyć"
+                }
+            }
+        },
+        "gen_by_them": {
+            "title": "Wygeneruj wiadomość przez nich"
+        }
+    },
+
+    "response": {
+        "generate": {
+            "gen_failed": ":x: **generowanie wiadomości nie powiodło się**",
+            "val_too_big": ":x: **zbyt wysoka wartość**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+        },
+        "gen_by_them": {
+            "normal": ":white_check_mark: **odpowiedź zostawie wkrótce wysłana**",
+            "no_impostor": ":question: **odpowiedź zostanie wkrótce wysłana jako zwykła wiadomość. Spróbuj [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_data": ":x: Nie słyszałem nic od $1"
+        },
+        "help": {
+            "header": "Polecenia Deuteru",
+            "sub": "Bardziej obszerne informacje znajdują się na https://deut.portasynthinca3.me/",
+            "regular": "ZWYKŁE POLECENIA",
+            "regular_sub": "mogą zostać wywołane przez każdego",
+            "help": ":information_source: wyślij tę wiadomość",
+            "status": ":green_circle: pokaż kluczowe statystyki",
+            "stats": ":yellow_circle: statystyki dla nerdów",
+            "generate": ":1234: wygeneruj <ilość> (1 jeśli pominięto) wiadomości używając modelu aktualnego kanału",
+            "generate_from": ":level_slider: natychmiast wygeneruj wiadomość używając modelu podanego kanału",
+            "gen_global": ":rocket: natychmiast wygeneruj wiadomość używając globalnego modelu",
+            "donate": ":question: sposoby wsparcia mojego rozwoju",
+            "privacy": ":lock: moja polityka prywatności",
+            "support": ":thinking: sposoby otrzymania wsparcia",
+            "scoreboard": ":100: top-10 najbardziej aktywnych użytkowników na tym serwerze",
+            "admin": "POLECENIA ADMINISTRACYJNE",
+            "admin_sub": "mogą zostać wywołane tylko przez tych, którzy mają uprawnienia \"administratora\"",
+            "settings": ":gear: wyświetl menu zmiany konfiguracji",
+            "impostor": "<:amogus:887939317371138048> włącz tryb impersonacji"
+        },
+        "donate": {
+            "title": "Sposoby jak wesprzeć Deuter",
+            "share": ":loudspeaker: powiedz twoim znajomym o tym bocie",
+            "invite": "... albo zaproś go na inne serwery",
+            "patreon": ":money_mouth: przekaż dotację poprzez Patreona",
+            "paypal": ":money_mouth: przekaż dotację poprzez PayPala",
+            "dbl": ":speaking_head: zagłosuj na DBL"
+        },
+        "privacy": {
+            "title": "Polityka prywatności Deuteru",
+            "scope": {
+                "title": "1. ZAKRES",
+                "paragraph": "Ta wiadomość opisuje jak bot Discord Deuter (\"Deuter\", \"bot\"), jego twórca (\"ja\", \"mój\") przetwarza dane jego Użytkowników (\"ty\", \"twój\")"
+            },
+            "auth": {
+                "title": "2. AUTORYZACJA",
+                "paragraph": "Kiedy dasz botu autoryzację, zostaje on dodany jako członek serwera, który wybrałeś. Nie ma on dostępu do twojego profilu, wiadomości prywatnych lub czegokolwiek niezwiązanego z serwerem."
+            },
+            "processing": {
+                "title": "3. PRZETWARZANIE DANYCH",
+                "paragraph": "Deuter przetwarza wiadomości, które otrzymuje na kanałach serwerów zgodznie z tymi zasadami:\n- jeśli kanał ma włączoną opcję \"zbierania wiadomości\", trenuje on model tą wiadomości i zapisuje nań model na dysku\n- jeśli kanał ma włączoną opcję \"globalnego zbierania wiadomości\", trenuje on globalny model tą wiadomości i zapisuje nań model na dysku."
+            },
+            "storage": {
+                "title": "4. PRZECHOWYWANIE DANYCH",
+                "paragraph": "Deuter przechowuje następujące dane:\n- Statystyki i ustawienia kanału (n.p. czy zbieranie wiadomości jest włączone, łączna ilość wiadomości, itp.). Dane te mogą zostać wyświetlone poprzez polecenia `/status` i `/ustawienia`.\n- Lokalne łańcuchy Markova, które składają się ze zbioru prawdopodobieństw jednego słowa występującego za drugim.\n- Globalny łańcuch Markova, który przechowuje w/w dane.\n- ID kanału, użytkownika i serwera.\n- Ilości wiadomości wysłanych przez użytkowników dla `/wyniki`.\n- Surowe wiadomości aby móc przetrenować modele w wypadku zmian w formacie.\nDeuter **nie** przechowuje następujących informacji:\n- Nicki i tagi użytkowników.\n- Inne dane nie wymienione w liście wyżej."
+            },
+            "contacting": {
+                "title": "5. KONTAKT",
+                "paragraph": "Proszę odnieść się do polecenia `/wsparcie`"
+            },
+            "removal": {
+                "title": "6. USUWANIE DANYCH",
+                "paragraph": "Z powodu sposobu działania łańcuchów Markova, niestety niemożliwym jest usunięcie porcji danych, którę przechowuje. Możliwym jest jedynie zresetowanie całego modelu.\nJeśli chcesz usunąć model kanału, możesz użyć polecenia `/zresetuj model`.\nJeśli chcesz zresetować globalny model, proszę skontaktuj się poprzez `/wsparcie`."
+            },
+            "disclosure": {
+                "title": "7. UJAWNIANIE DANYCH",
+                "paragraph": "Dane nie są przeze mnie ujawniane nikomu. Ponadto, osobiście nie patrzę na nie."
+            }
+        },
+        "support": {
+            "title": "Wsparcie Deuteru",
+            "server": ":eye: Serwer wsparcia",
+            "email": ":e_mail: Email"
+        },
+        "status": {
+            "title": "Statystyki Deuteru",
+            "this_chan": "Nauczone wiadomości",
+            "global": "Wiadomości dodane stąd do modelu globalnego",
+            "global_total": "Łączna ilość wiadomości w modelu globalnym"
+        },
+        "stats": {
+            "title": "Użycie zasobów Deuteru",
+            "data_size": {
+                "title": "Rozmiar danych użytkownika",
+                "value": "$1 KiB ($2 MiB)"
+            },
+            "uptime": "Czas pracy",
+            "existence": "Czas od kiedy mnie stworzono",
+            "servers": "Znane serwery",
+            "channels": "Znane kanały",
+            "ram": {
+                "title": "Użyta pamięć RAM",
+                "value": "$1 MiB"
+            },
+            "guild_servers": "Serwery OTP dla serwera Discord",
+            "channel_servers": "Serwery OTP dla kanału Discord",
+            "processes": "Łączna ilość procesów BEAM",
+            "version": "Wersja"
+        },
+        "scoreboard": {
+            "title": "Tabela wyników Deuteru",
+            "row": "$1 - $2 wiadomości"
+        },
+        "reset": {
+            "settings": ":white_check_mark: **ustawienia kanału zresetowane**",
+            "model": ":white_check_mark: **model kanału zresetowany**",
+            "server": ":white_check_mark: **ustawienia serwera zresetowane**"
+        },
+        "impostor": {
+            "activated": ":white_check_mark: **impersonacja została aktywowana**",
+            "webhook_error": ":x: **bot nie posiada uprawnień \"Manage Webhooks\"**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "unknown_error": ":x: **nieznany błąd**"
+        },
+        "missing_admin": ":x: **brak uprawnień \"administratora\"**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+    },
+
+    "setting": {
+        "name": {
+            "train": "Trenuj lokalny model",
+            "global_train": "Trenuj globalny model",
+            "ignore_bots": "Ignoruj boty",
+            "remove_mentions": "Usuń wzmianki",
+            "autogen_rate": "Automatic generation rate",
+            "max_gen_len": "Maksymalny argument dla /wygeneruj",
+            "impostor_rate": "Współczynnik impersonacji"
+        },
+        "bin_value": {
+            "on": "włącz",
+            "off": "wyłącz",
+            "no_override": "nie nadpisano"
+        },
+        "server": "Zastosowano dla wszyskich kanałów, chyba że zostały nadpisane",
+        "current": "Aktualny kanał"
+    }
+}
