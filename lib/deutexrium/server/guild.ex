@@ -39,6 +39,7 @@ defmodule Deutexrium.Server.Guild do
 
   @impl true
   def handle_call({:set, setting, val}, _from, {id, meta, timeout}) do
+    Logger.info("guild-#{id} server: setting #{setting} set to #{inspect val}")
     {:reply, :ok, {id, Map.put(meta, setting, val), timeout}, timeout}
   end
 

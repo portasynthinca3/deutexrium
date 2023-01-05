@@ -81,14 +81,14 @@ defmodule Deutexrium.Server.Voice do
         unless text == "" do
           if is_trigger(alternatives) do
             # if text is a trigger
-            {_, _, text} = Channel.generate(id)
+            {text, _} = Channel.generate(id)
             Logger.info("voice-#{chan}: trigger seq")
             say(text, conn)
           else
             user = data |> Map.get("user") |> :erlang.binary_to_integer
             case Channel.handle_message(id, text, false, user) do
               :ok -> :ok
-              {:message, {_, _, text}} -> say(text, conn)
+              {:message, {text, _}} -> say(text, conn)
             end
           end
         end

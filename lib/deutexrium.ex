@@ -12,8 +12,7 @@ defmodule Deutexrium do
   alias Nostrum.Struct
   import Nostrum.Struct.Embed
   alias Deutexrium.Server
-
-  @missing_privilege ":x: **missing \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+  import Deutexrium.Translation, only: [translate: 2, translate: 3]
 
   def start_link do
     Consumer.start_link(__MODULE__)
@@ -28,36 +27,26 @@ defmodule Deutexrium do
   def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
     self = msg.author.id == Nostrum.Cache.Me.get().id
     unless self or msg.guild_id == nil or msg.channel_id == nil or byte_size(msg.content) == 0 do
-      # print metadata
-      if msg.content == "deut_debug" and msg.author.id in Application.fetch_env!(:deutexrium, :debug_people) do
-        Api.create_message(msg.channel_id, content: """
-        channel metadata
-        ```elixir
-        #{inspect Server.Channel.get_meta({msg.channel_id, msg.guild_id})}
-        ```
-        guild metadata
-        ```elixir
-        #{inspect Server.Guild.get_meta(msg.guild_id)}
-        ```
-        """)
-      end
-
-      # react to mentions
+      # react to mentions and replies
       bot_id = Nostrum.Cache.Me.get().id
-      possible_mentions = ["<@#{bot_id}>", "<@!#{bot_id}>"]
-      if String.contains?(msg.content, possible_mentions) do
-        sent = Sentiment.detect(msg.content)
-        Logger.debug("mentioned with sentiment=#{inspect sent}")
-        case Server.Channel.generate({msg.channel_id, msg.guild_id}, sent) do
-          {_, _, text} ->
-            simulate_typing(text, msg.channel_id, false)
-            Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
-        end
+      reference = Map.get(msg, :referenced_message, nil)
+      ref_author = if reference, do: reference.author.id, else: nil
+      ref_app = if reference, do: reference.application_id, else: nil
+      bot_mentioned = String.contains?(msg.content, ["<@#{bot_id}>", "<@!#{bot_id}>"])
+        or ref_author == bot_id
+        or ref_app == bot_id
+
+      if bot_mentioned do
+        prompt = msg.content |> String.replace("<@#{bot_id}>", "") |> String.replace("<@!#{bot_id}>", "")
+        Logger.debug("mentioned")
+        {text, _} = Server.Channel.generate({msg.channel_id, msg.guild_id}, nil, prompt)
+        simulate_typing(text, msg.channel_id, false)
+        Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
       else
         # only train if it doesn't contain bot mentions
         case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
           :ok -> :ok
-          {:message, text} ->
+          {:message, {text, author}} ->
             # see it it's impostor time
             impostor_rate = Server.Channel.get({msg.channel_id, msg.guild_id}, :impostor_rate)
             impostor_rate = if impostor_rate == nil, do: 0, else: impostor_rate
@@ -66,7 +55,7 @@ defmodule Deutexrium do
             else
               nil
             end
-            try_sending_webhook(text, msg.channel_id, webhook_data, msg.guild_id)
+            try_sending_webhook({text, author}, msg.channel_id, webhook_data, msg.guild_id)
         end
       end
     end
@@ -74,7 +63,7 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen"}} = inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "generate"}} = inter, _}) do
     id = {inter.channel_id, inter.guild_id}
     count = if inter.data.options == nil do
       1
@@ -84,216 +73,151 @@ defmodule Deutexrium do
     end
 
     if count > 0 do
-      try do
-        text = 1..count
-            |> Enum.map_join("\n", fn _ -> {_, _, t} = Server.Channel.generate(id)
-                        t end)
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
-      rescue
-        _ -> Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **generation failed**"}})
+      sentences = for _ <- 1..count, do: elem(Server.Channel.generate(id), 0)
+      if :error in sentences do
+        Logger.error("generation failed")
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.generate.gen_failed")}})
+      else
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: Enum.join(sentences, " ")}})
       end
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.generate.val_too_big"), flags: 64}})
     end
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: nil}} = inter, _}) do
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **you must supply the sentiment, author or both. For simple generation use [/gen](https://deut.portasynthinca3.me/commands/gen)**", flags: 64}})
-  end
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by", options: options}} = inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by_them", target_id: user_id}} = inter, _}) do
     id = {inter.channel_id, inter.guild_id}
-    {sentiment, user} = case options do
-      [%{name: "user", value: u}, %{name: "sentiment", value: s}] -> {s, u}
-      [%{name: "sentiment", value: s}, %{name: "user", value: u}] -> {s, u}
-      [%{name: "sentiment", value: s}] -> {s, nil}
-      [%{name: "user", value: u}] -> {"nosentiment", u}
-    end
-    sentiment = :erlang.binary_to_existing_atom(sentiment)
-
-    case Server.Channel.generate(id, sentiment, user) do
-      {_, _, _} = data ->
+    case Server.Channel.generate(id, user_id) do
+      {_text, _author} = data ->
         webhook = Server.Channel.get(id, :webhook_data)
         Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
-          {_, _} -> ":white_check_mark: **the response will be sent shortly**"
-          nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**"
+          {_, _} -> translate(inter.locale, "response.gen_by_them.normal")
+          nil -> translate(inter.locale, "response.gen_by_them.no_impostor")
         end, flags: 64}})
         try_sending_webhook(data, inter.channel_id, webhook, inter.guild_id)
 
       :error ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: cond do
-          user != nil -> ":x: **I haven't heard anything `#{Sentiment.name(sentiment)}` from <@#{user}>**"
-          user == nil -> ":x: **I haven't heard anything `#{Sentiment.name(sentiment)}` in this channel**"
-        end, flags: 64}})
-    end
-  end
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "Generate message by them", target_id: user_id}} = inter, _}) do
-    id = {inter.channel_id, inter.guild_id}
-    case Server.Channel.generate(id, :nosentiment, user_id) do
-      {_, _, _} = data ->
-        webhook = Server.Channel.get(id, :webhook_data)
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
-          {_, _} -> ":white_check_mark: **the response will be sent shortly**"
-          nil -> ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**"
-        end, flags: 64}})
-        try_sending_webhook(data, inter.channel_id, webhook, inter.guild_id)
-
-      :error ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I haven't heard anything from <@#{user_id}>**", flags: 64}})
+        Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.gen_by_them.no_data", ["<@#{user_id}>"]), flags: 64}})
     end
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_from", options: [%{name: "channel", value: channel}]}} = inter, _}) do
-    {_, _, text} = Server.Channel.generate({channel, inter.guild_id})
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "generate_from", options: [%{name: "channel", value: channel}]}} = inter, _}) do
+    text = case Server.Channel.generate({channel, inter.guild_id}) do
+      :error -> translate(inter.locale, "response.generate.gen_failed")
+      {text, _} -> text
+    end
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "join", options: [%{name: "channel", value: channel}, %{name: "language", value: lang}]}} = inter, _}) do
-    case Server.Voice.join({channel, inter.guild_id}, lang) do
-      :ok ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **joined** <##{channel}>", flags: 64}})
-      {:error, :pay} ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **this feature is paid and costs 5 USD per month per server. Contact `porta#1746` if you want to use it or know why.**", flags: 64}})
-      {:error, :text} ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: <##{channel}> **is not a voice channel**", flags: 64}})
-      end
-  end
-
-
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "ggen"}} = inter, _}) do
-    {_, _, text} = Server.Channel.generate({0, 0})
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_global"}} = inter, _}) do
+    {text, _} = Server.Channel.generate({0, 0})
     Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "help"}} = inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "help"}} = inter, _}) do
     embed = %Struct.Embed{}
-        |> put_title("Deuterium commands")
-        |> put_color(0xe6f916)
-        |> put_description("More extensive help information at https://deut.portasynthinca3.me/")
-        |> put_url("https://deut.portasynthinca3.me/")
+      |> put_title(translate(locale, "response.help.header"))
+      |> put_color(0xe6f916)
+      |> put_description(translate(locale, "response.help.sub"))
+      |> put_url("https://deut.portasynthinca3.me/")
 
-        |> put_field("REGULAR COMMANDS", "can be run by anybody")
-        |> put_field("help", ":information_source: send this message", true)
-        |> put_field("status", ":green_circle: show key statistics", true)
-        |> put_field("stats", ":yellow_circle: boring info for nerds", true)
-        |> put_field("gen <count>", ":1234: generate <count> (1 if omitted) messages using the current channel's model immediately", true)
-        |> put_field("gen_by [sentiment] [@user]", ":face_with_monocle: generate a message with a specific sentiment and/or authorship using the current channel's model immediately", true)
-        |> put_field("gen_from #channel", ":level_slider: immediately generate a message using the mentioned channel's model", true)
-        |> put_field("ggen", ":rocket: immediately generate a message using the global model", true)
-        |> put_field("donate", ":question: ways to support me", true)
-        |> put_field("privacy", ":lock: my privacy policy", true)
-        |> put_field("support", ":thinking: ways to get support", true)
-        |> put_field("scoreboard", ":100: top-10 most active users in this server", true)
-        |> put_field("join", ":loud_sound: join a voice channel", true)
+      |> put_field(translate(locale, "response.help.regular"), translate(locale, "response.help.regular_sub"))
 
-        |> put_field("ADMIN COMMANDS", "can only be run by those with the \"administrator\" privilege")
-        |> put_field("settings", ":gear: display the configuration modification menu", true)
-        |> put_field("search <word>", ":mag: search for a word in the model", true)
-        |> put_field("forget <word>", ":skull: forget a specific word", true)
-        |> put_field("impostor", "<:amogus:887939317371138048> enable impersonation mode. **please read /help impostor before using**", true)
+    embed = Enum.reduce([
+        "help", "status",
+        "stats", "generate",
+        "generate_from", "gen_global",
+        "donate", "privacy",
+        "support", "scoreboard"
+      ], embed, fn command, embed ->
+        put_field(embed, translate(locale, "command.#{command}.title"), translate(locale, "response.help.#{command}"), true)
+      end)
 
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
-  end
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "donate"}} = inter, _}) do
-    embed = %Struct.Embed{}
-        |> put_title("Ways to support Deuterium")
-        |> put_color(0xe6f916)
-
-        |> put_field(":loudspeaker: tell your friends about the bot", "...or invite it to other servers")
-        |> put_field(":money_mouth: donate on Patreon", "https://patreon.com/portasynthinca3")
-        |> put_field(":money_mouth: donate via PayPal", "https://paypal.me/portasynthinca3")
-        |> put_field(":speaking_head: vote on DBL", "https://top.gg/bot/733605243396554813/vote")
-
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
-  end
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "privacy"}} = inter, _}) do
-    embed = %Struct.Embed{}
-        |> put_title("Deuterium privacy policy")
-        |> put_color(0xe6f916)
-        |> put_url("https://deut.portasynthinca3.me/privacy-policy")
-
-        |> put_field("1. SCOPE", ~S"""
-           This message describes how the Deuterium Discord bot ("Deuterium", "the bot", "bot"), its creator ("I", "me") processes its Users' ("you") data.
-           """)
-        |> put_field("2. AUTHORIZATION", """
-           When you authorize the bot, it is added as a member of the server you've chosen. It has no access to your profile, direct messages or anything that is not related to the selected server.
-           """)
-        |> put_field("3. DATA PROCESSING", """
-           Deuterium receives messages it receives in server channels and processes them according to these rules:
-           - if the channel has its "message collection" setting set to "on", it trains the model on this message and saves said model do disk
-           - if the channel has its "global message collection" setting set to "on", it trains the global model on this message and saves said model do disk
-           """)
-        |> put_field("4. DATA STORAGE", """
-           Deuterium stores the following data:
-           - Channel settings and statistics (e.g. is message collection allowed, the total number of collected messages, etc.). This data can be viewed using the `/status` and `/settings` commands
-           - Local Markov chain model which consists of a set of probabilities of one word coming after another word
-           - Global Markov chain model which stores content described above
-           - Channel, user and server IDs
-           - User-to-message-count relationship for `/scoreboard`
-           - Raw message content to re-train the models in case the format changes
-           Deuterium does **not** store the following data:
-           - User nicknames/tags
-           - Any other data not mentioned in the list above
-           """)
-        |> put_field("5. CONTACTING", """
-           Please refer to `/support`
-           """)
-        |> put_field("6. DATA REMOVAL", """
-           Due to the nature of Markov chains, it's unfortunately not possible to remove a certain section of the data I store. Only the whole model can be reset.
-           If you wish to reset the channel model, you may use the `/reset channel model` command.
-           If you wish to reset the global model, please reach out to `/support`.
-           """)
-        |> put_field("7. DATA DISCLOSURE", """
-           I do not disclose collected data to anyone. Furthermore, I do not look at it myself.
-           """)
-
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
-  end
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "support"}} = inter, _}) do
-    embed = %Struct.Embed{}
-        |> put_title("Deuterium support")
-        |> put_color(0xe6f916)
-        |> put_field(":eye: Support server", "https://discord.gg/N52uWgD")
-        |> put_field(":e_mail: Email", "`portasynthinca3 (at) gmail.com`")
+    embed = embed
+      |> put_field(translate(locale, "response.help.admin"), translate(locale, "response.help.admin_sub"))
+      |> put_field(translate(locale, "command.settings.title"), translate(locale, "response.help.settings"), true)
+      |> put_field(translate(locale, "command.impostor.title"), translate(locale, "response.help.impostor"), true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "status"}} = inter, _}) do
-    chan_model = Server.Channel.get_model_stats({inter.channel_id, inter.guild_id})
-    global_model = Server.Channel.get_model_stats({0, 0})
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "donate"}} = inter, _}) do
+    embed = %Struct.Embed{}
+      |> put_title(translate(locale, "response.donate.title"))
+      |> put_color(0xe6f916)
+
+      |> put_field(translate(locale, "response.donate.share"), translate(locale, "response.donate.invite"))
+      |> put_field(translate(locale, "response.donate.patreon"), "https://patreon.com/portasynthinca3")
+      |> put_field(translate(locale, "response.donate.paypal"), "https://paypal.me/portasynthinca3")
+      |> put_field(translate(locale, "response.donate.dbl"), "https://top.gg/bot/733605243396554813/vote")
+
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "privacy"}} = inter, _}) do
+    embed = %Struct.Embed{}
+      |> put_title(translate(locale, "response.privacy.title"))
+      |> put_color(0xe6f916)
+      |> put_url("https://deut.portasynthinca3.me/privacy-policy")
+
+      embed = Enum.reduce([
+        "scope", "auth",
+        "processing", "storage",
+        "contacting", "removal",
+        "disclosure",
+      ], embed, fn section, embed ->
+        put_field(embed, translate(locale, "response.privacy.#{section}.title"), translate(locale, "response.privacy.#{section}.paragraph"))
+      end)
+
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "support"}} = inter, _}) do
+    embed = %Struct.Embed{}
+        |> put_title(translate(locale, "response.support.title"))
+        |> put_color(0xe6f916)
+        |> put_field(translate(locale, "response.support.server"), "https://discord.gg/N52uWgD")
+        |> put_field(translate(locale, "response.support.email"), "`portasynthinca3 (at) gmail.com`")
+
+    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "status"}} = inter, _}) do
+    chan_meta = Server.Channel.get_meta({inter.channel_id, inter.guild_id})
+    global_meta = Server.Channel.get_meta({0, 0})
 
     embed = %Struct.Embed{}
-        |> put_title("Deuterium status")
+        |> put_title(translate(locale, "response.status.title"))
         |> put_color(0xe6f916)
         |> put_url("https://deut.portasynthinca3.me/commands/status")
 
-        |> put_field("Messages learned", chan_model.trained_on)
-        |> put_field("Messages contributed to the global model", chan_model.global_trained_on)
-        |> put_field("Total messages in the global model", global_model.trained_on)
+        |> put_field(translate(locale, "response.status.this_chan"), chan_meta.total_msgs)
+        |> put_field(translate(locale, "response.status.global"), chan_meta.global_trained_on)
+        |> put_field(translate(locale, "response.status.global_total"), global_meta.total_msgs)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed]}})
   end
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "stats"}} = inter, _}) do
-    used_space = Deutexrium.Persistence.used_space() |> div(1024)
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "stats"}} = inter, _}) do
+    used_space = GenServer.call(Deutexrium.Persistence, :storage_size) |> div(1024)
     used_memory = :erlang.memory(:total) |> div(1024 * 1024)
     %{guild: guild_server_cnt, channel: chan_server_cnt} = Server.RqRouter.server_count
     {uptime, _} = :erlang.statistics(:wall_clock)
@@ -303,20 +227,21 @@ defmodule Deutexrium do
         |> Timex.Duration.from_milliseconds |> Timex.Format.Duration.Formatter.format(:humanized)
 
     embed = %Struct.Embed{}
-        |> put_title("Deuterium resource usage")
+        |> put_title(translate(locale, "response.stats.title"))
         |> put_color(0xe6f916)
         |> put_url("https://deut.portasynthinca3.me/commands/stats")
 
-        |> put_field("User data size", "#{used_space} KiB (#{used_space |> div(1024)} MiB)", true)
-        |> put_field("Uptime", "#{uptime}", true)
-        |> put_field("Time since I was created", "#{been_created_for}", true)
-        |> put_field("Known servers", "#{Deutexrium.Persistence.guild_cnt}", true)
-        |> put_field("Known channels", "#{Deutexrium.Persistence.chan_cnt}", true)
-        |> put_field("Used RAM", "#{used_memory} MiB", true)
-        |> put_field("Guild servers", "#{guild_server_cnt}", true)
-        |> put_field("Channel servers", "#{chan_server_cnt}", true)
-        |> put_field("Total internal processes", "#{Process.list |> length()}", true)
-        |> put_field("Version", "#{@version}", true)
+        |> put_field(translate(locale, "response.stats.data_size.title"),
+          translate(locale, "response.stats.data_size.value", ["#{used_space}", "#{used_space |> div(1024)}"]), true)
+        |> put_field(translate(locale, "response.stats.uptime"), "#{uptime}", true)
+        |> put_field(translate(locale, "response.stats.existence"), "#{been_created_for}", true)
+        |> put_field(translate(locale, "response.stats.servers"), "#{Deutexrium.Persistence.guild_cnt}", true)
+        |> put_field(translate(locale, "response.stats.channels"), "#{Deutexrium.Persistence.chan_cnt}", true)
+        |> put_field(translate(locale, "response.stats.ram.title"), translate(locale, "response.stats.ram.value", ["#{used_memory}"]), true)
+        |> put_field(translate(locale, "response.stats.guild_servers"), "#{guild_server_cnt}", true)
+        |> put_field(translate(locale, "response.stats.channel_servers"), "#{chan_server_cnt}", true)
+        |> put_field(translate(locale, "response.stats.processes"), "#{Process.list |> length()}", true)
+        |> put_field(translate(locale, "response.stats.version"), "#{@version}", true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
@@ -326,12 +251,12 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}} = inter, _}) do
     %{user_stats: scoreboard} = Server.Guild.get_meta(inter.guild_id)
 
-    embed = %Struct.Embed{} |> put_title("Deuterium scoreboard")
+    embed = %Struct.Embed{} |> put_title(translate(inter.locale, "response.scoreboard.title"))
         |> put_color(0xe6f916)
         |> put_url("https://deut.portasynthinca3.me/commands/scoreboard")
     top10 = scoreboard |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
     {_, embed} = top10 |> Enum.reduce({1, embed}, fn {k, v}, {idx, acc} ->
-      {idx + 1, acc |> put_field("##{idx}", "<@#{k}> - #{v} messages")}
+      {idx + 1, acc |> put_field("##{idx}", translate(inter.locale, "response.scoreboard.row", ["<@#{k}>", "#{v}"]))}
     end)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
@@ -339,19 +264,16 @@ defmodule Deutexrium do
 
 
 
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target, options: [%{name: property}]}]}} = inter, _}) do
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target}]}} = inter, _}) do
     if check_admin_perm(inter) do
-      cond do
-        target == "server" and property == "settings" ->
-          :ok = Server.Guild.reset(inter.guild_id, :settings)
-        target == "channel" and property == "settings" ->
-          :ok = Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
-        target == "channel" and property == "model" ->
-          :ok = Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
+      :ok = case target do
+        "server" -> Server.Guild.reset(inter.guild_id, :settings)
+        "settings" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
+        "model" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
       end
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **#{target} #{property} reset**", flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.reset.#{target}"), flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.missing_admin"), flags: 64}})
     end
   end
 
@@ -359,58 +281,24 @@ defmodule Deutexrium do
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings"}} = inter, _}) do
     if check_admin_perm(inter) do
-      components = Server.Settings.initialize({inter.channel_id, inter.guild_id}, inter)
+      components = Server.Settings.initialize(inter)
       Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
+      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.missing_admin"), flags: 64}})
     end
   end
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{custom_id: "settings_target", values: [value]}} = inter, _}) do
-    {_, components} = Server.Settings.switch_ctx({inter.channel_id, inter.guild_id}, case value do
+    {old_inter, components} = Server.Settings.switch_ctx(inter, case value do
       "server" -> :guild
       str -> :erlang.binary_to_integer(str)
     end)
     Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
+    Api.delete_interaction_response!(old_inter)
   end
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{component_type: 2, custom_id: id}} = inter, _}) do
-    {_, components} = Server.Settings.clicked({inter.channel_id, inter.guild_id}, id)
+    {old_inter, components} = Server.Settings.clicked(inter, id)
     Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
-  end
-
-
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "search", options: [%{name: "word", value: word}]}} = inter, _}) do
-    word = word |> String.downcase
-    if check_admin_perm(inter) do
-      embed = %Struct.Embed{}
-          |> put_title("Search results")
-          |> put_color(0xe6f916)
-          |> put_url("https://deut.portasynthinca3.me/admin-cmd/search")
-      embed = Server.Channel.token_stats({inter.channel_id, inter.guild_id})
-          |> Enum.filter(fn
-            {k, _} when is_tuple(k) or is_atom(k) -> false
-            {k, _} -> k |> String.downcase |> String.contains?(word)
-            end)
-          |> Enum.sort_by(fn {_, v} -> v end) |> Enum.reverse |> Enum.slice(0..9)
-          |> Enum.reduce(embed, fn {k, v}, acc ->
-        acc |> put_field("`#{k}`", "#{v} occurrences", true)
-      end)
-
-      Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
-    else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
-    end
-  end
-
-
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "forget", options: [%{name: "word", value: word}]}} = inter, _}) do
-    if check_admin_perm(inter) do
-      Server.Channel.forget({inter.channel_id, inter.guild_id}, word)
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **i forgor `#{word}` :skull:**", flags: 64}})
-    else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
-    end
+    Api.delete_interaction_response!(old_inter)
   end
 
 
@@ -427,52 +315,17 @@ defmodule Deutexrium do
         {:ok, %{id: hook_id, token: hook_token}} ->
           data = {hook_id, hook_token}
           Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
-          ":white_check_mark: **impersonation activated**"
+          translate(inter.locale, "response.impostor.activated")
         {:error, %{status_code: 403}} ->
-          ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)"
+          translate(inter.locale, "response.impostor.webhook_error")
         {:error, err} ->
           Logger.error("error adding webhook: #{inspect err}")
-          ":x: **unknown error**"
+          translate(inter.locale, "response.unknown_error")
       end
     else
-      @missing_privilege
+      translate(inter.locale, "response.missing_admin")
     end
     Api.create_interaction_response(inter, %{type: 4, data: %{content: response, flags: 64}})
-  end
-
-
-
-  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "export", options: [%{value: resource}, %{value: format}]}} = inter, _}) do
-    format = :erlang.binary_to_atom(format)
-    extension = case format do
-      :etf_gz -> ".etf.gz"
-      :json -> ".json"
-      :bson -> ".bson"
-    end
-    if check_admin_perm(inter) do
-      case Api.create_dm(inter.user.id) do
-        {:error, _} ->
-          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":x: **I couldnt't contact you via DMs. Check your settings**", flags: 64}})
-        {:ok, %{id: dm_id}} ->
-          Api.create_interaction_response(inter, %{type: 4, data: %{content: ":white_check_mark: **Your data package is being exported**", flags: 64}})
-          case resource do
-            "chan" ->
-              {meta, model} = Server.Channel.export({inter.channel_id, inter.guild_id}, format)
-              Api.create_message!(dm_id, %{content: ":white_check_mark: **Your data package is ready**", files: [
-                %{name: "meta_#{inter.channel_id}#{extension}", body: meta},
-                %{name: "model_#{inter.channel_id}#{extension}", body: model}
-              ]})
-            "guild" ->
-              meta = Server.Guild.export(inter.guild_id, format)
-              Api.create_message!(dm_id, %{content: ":white_check_mark: **Your data package is ready**", files: [
-                %{name: "guild_meta_#{inter.guild_id}#{extension}", body: meta}
-              ]})
-          end
-
-      end
-    else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: @missing_privilege, flags: 64}})
-    end
   end
 
 
@@ -493,7 +346,7 @@ defmodule Deutexrium do
   defp simulate_typing(text, channel, hack, nil = _guild, nil = _username) do
     # calculate delay
     words = text |> String.split() |> length()
-    delay = floor(words * ((80 + (10 * :rand.normal())) / 60) * 1000) # 80 +/-10 wpm
+    delay = floor(words * ((160 + (10 * :rand.normal())) / 60) * 1000) # 16 +/-10 wpm
       |> min(5000) # max 5s
       |> max(1000) # min 1s
 
@@ -529,24 +382,18 @@ defmodule Deutexrium do
 
   defp try_sending_webhook(data, chan, webhook, guild \\ nil)
 
-  defp try_sending_webhook({0, _, text}, chan, _webhook, _guild) do
-    # unknown user
-    simulate_typing(text, chan, false)
-    Api.create_message(chan, content: text)
-  end
-
-  defp try_sending_webhook({_user_id, _, text}, chan, nil, _guild) do
+  defp try_sending_webhook({text, _user_id}, chan, nil, _guild) do
     # no webhook
     simulate_typing(text, chan, false)
     Api.create_message(chan, content: text)
   end
 
-  defp try_sending_webhook({_, _, text}, chan, :fail, _guild) do
+  defp try_sending_webhook({text, _user_id}, chan, :fail, _guild) do
     # webhook failed, don't simulate typing
     Api.create_message(chan, content: text)
   end
 
-  defp try_sending_webhook({user_id, _, text} = what, chan, {id, token}, guild) do
+  defp try_sending_webhook({text, user_id} = what, chan, {id, token}, guild) do
     # get username and avatar
     {:ok, user} = Api.get_user(user_id)
     ava = "https://cdn.discordapp.com/avatars/#{user_id}/#{user.avatar}"

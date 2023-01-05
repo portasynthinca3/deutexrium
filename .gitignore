@@ -28,3 +28,4 @@ deutexrium-*.tar
 build.sh
 ltemplate.txt
 release.tar.gz
+/token

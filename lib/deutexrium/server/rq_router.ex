@@ -21,7 +21,7 @@ defmodule Deutexrium.Server.RqRouter do
       :settings -> Server.Settings
     end
 
-    # start it (returns an error if already srarted, which is okay)
+    # start it (returns an error if already started, which is okay)
     GenServer.start(module, id, name: name)
     name
   end
@@ -53,18 +53,7 @@ defmodule Deutexrium.Server.RqRouter do
   def server_count do
     [:guild, :channel, :voice, :settings] |> Enum.map(fn type ->
                                               # I HATE MATCH SPECIFICATIONS
-      {type, Registry.select(Registry.Server, [{{{type, :"$1"}, :_, :_}, [], [:"$1"]}]) |> length} end)
+      {type, Registry.select(Registry.Server, [{{{type, :"$1"}, :_, :_}, [], [:"$1"]}]) |> length()} end)
       |> Enum.into(%{})
-  end
-
-  def shutdown do
-    # shutdown servers
-    Registry.select(Registry.Server, [{{:"$1", :_, :_}, [], [:"$1"]}])
-      |> Stream.filter(fn {type, _} -> type == :channel or type == :guild end)
-      |> Stream.each(& &1 |> ensure |> GenServer.call(:shutdown))
-
-    # stop application
-    Application.stop(:deutexrium)
-    Application.stop(:nostrum)
   end
 end

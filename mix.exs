@@ -4,35 +4,39 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "1.4.2",
+      version: "2.0.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      releases: [
+        default: [
+          cookie: "deutexrium"
+        ]
+      ]
     ]
   end
 
   def application do
     [
       mod: {Deutexrium.App, []},
-      extra_applications: [:logger, :os_mon, :gun, :tools]
+      extra_applications: [:logger, :os_mon, :gun, :tools, :mnesia]
     ]
   end
 
   defp deps do
     [
       {:gun, "~> 2.0", hex: :remedy_gun},
-      {:nostrum, github: "kraigie/nostrum", ref: "master"},
-      # {:nostrum, "~> 0.5.1"},
+      # {:nostrum, github: "kraigie/nostrum", ref: "master"},
+      {:nostrum, "~> 0.6.1"},
       {:logger_file_backend, "~> 0.0.13"},
       {:cyanide, "~> 1.0"},
-      {:markov, "~> 1.3"},
-      {:graceful_stop, "~> 0.2.0"},
+      {:markov, "~> 4.1.2"},
       {:timex, "~> 3.0"},
-      {:veritaserum, "~> 0.2.2"},
       {:jason, "~> 1.3"},
       {:instream, "~> 1.0"},
       {:observer_cli, "~> 1.7"},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:flow, "~> 1.2"}
     ]
   end
 end

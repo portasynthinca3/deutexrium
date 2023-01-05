@@ -3,8 +3,20 @@ defmodule Deutexrium.Persistence.Meta do
   Channel metadata serialization
   """
 
-  @derive {Jason.Encoder, only: [:train, :global_train, :autogen_rate, :impostor_rate,
-      :enable_actions, :ignore_bots, :remove_mentions, :max_gen_len]}
+  alias Deutexrium.Persistence
+
+  @type channel_setting()
+    :: :train
+     | :global_train
+     | :autogen_rate
+     | :impostor_rate
+     | :enable_actions
+     | :ignore_bots
+     | :remove_mentions
+     | :max_gen_len
+     | :total_msgs
+     | :webhook_data
+
   defstruct train: nil,
     global_train: nil,
     autogen_rate: nil,
@@ -15,12 +27,11 @@ defmodule Deutexrium.Persistence.Meta do
     max_gen_len: nil,
     # system data
     total_msgs: 0,
-    webhook_data: nil
+    global_trained_on: 0,
+    webhook_data: nil,
+    last_message: nil
 
-  defp path(channel_id) do
-    Application.fetch_env!(:deutexrium, :data_path)
-        |> Path.join("meta_" <> :erlang.integer_to_binary(channel_id) <> ".etf.gz")
-  end
+  defp path(channel_id), do: Persistence.root_for(channel_id) |> Path.join("meta.etf.gz")
 
   def load!(channel_id) when is_integer(channel_id) do
     %Deutexrium.Persistence.Meta{} |> Map.merge(path(channel_id)
@@ -33,6 +44,6 @@ defmodule Deutexrium.Persistence.Meta do
     data = data
         |> :erlang.term_to_binary
         |> :zlib.gzip
-    File.write!(path(channel_id), data)
+    File.write(path(channel_id), data)
   end
 end

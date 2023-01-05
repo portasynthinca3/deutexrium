@@ -1,12 +1,33 @@
 defmodule Deutexrium.Persistence do
   @moduledoc """
-  Serialization umbrella functions
+  Storage umbrella functions
   """
 
-  def used_space do
-    path = Application.fetch_env!(:deutexrium, :data_path)
+  use GenServer
+  require Logger
+
+  def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
+  def init(_) do
+    Process.send_after(self(), :calculate_usage, 0)
+    {:ok, 0}
+  end
+  def handle_info(:calculate_usage, _) do
+    Logger.info("calculating disk usage")
+    Process.send_after(self(), :calculate_usage, 60_000)
+    {:noreply, calculate_used_space()}
+  end
+  def handle_call(:storage_size, _from, state) do
+    {:reply, state, state}
+  end
+
+  def calculate_used_space(path \\ Application.fetch_env!(:deutexrium, :data_path)) do
     File.ls!(path) |> Enum.reduce(0, fn file, acc ->
-      acc + File.stat!(Path.join(path, file)).size
+      stat = File.stat!(Path.join(path, file))
+      if stat.type == :directory do
+        acc + calculate_used_space(Path.join(path, file))
+      else
+        acc + stat.size
+      end
     end)
   end
 
@@ -26,5 +47,12 @@ defmodule Deutexrium.Persistence do
         |> String.split("\n")
         |> Enum.filter(fn x -> String.length(x) >= 1 end)
         |> Enum.map(&String.to_integer/1)
+  end
+
+  def root_for(id) do
+    first_two = String.slice("#{id}", 0..1)
+    Application.fetch_env!(:deutexrium, :data_path)
+        |> Path.join(first_two)
+        |> Path.join("#{id}")
   end
 end

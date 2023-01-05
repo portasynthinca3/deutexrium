@@ -17,11 +17,13 @@ defmodule Deutexrium.Sup do
   def init(_init_arg) do
     children = [
       Deutexrium,
-      Deutexrium.Influx.LoadCntr,
-      Deutexrium.Influx,
-      Deutexrium.Influx.Logger,
+      # Deutexrium.Influx.LoadCntr,
+      # Deutexrium.Influx,
+      # Deutexrium.Influx.Logger,
       {Registry, keys: :unique, name: Registry.Server},
-      Deutexrium.Presence
+      Deutexrium.Presence,
+      Deutexrium.Translation,
+      Deutexrium.Persistence
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

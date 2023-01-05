@@ -1,13 +1,9 @@
 import Config
 
-prod_path = System.get_env("PROD_PATH")
-prod_log = System.get_env("PROD_LOG")
-
 config :deutexrium,
-  data_path: (if config_env() == :prod, do: prod_path, else: "/var/deutex_test"),
+  data_path: "/var/deutexrium/data",
   channel_unload_timeout: 3 * 60 * 1000, # milliseconds
   guild_unload_timeout: 4 * 60 * 1000,
-  debug_people: [471715557096554518], # ids of people that can run "deut_debug"
   default_router_cnt: 4,
   log_interval: 2000,
   node_voice_server: {'localhost', 2700}
@@ -21,12 +17,12 @@ config :deutexrium, Deutexrium.Influx,
 
 config :logger,
   level: :debug,
-  backends: [:console, {LoggerFileBackend, :debug_log}]
+  backends: [:console, {LoggerFileBackend, :file}]
 config :logger, :console,
   metadata: [:shard, :guild, :channel],
   level: :info
-config :logger, :debug_log,
-  path: (if config_env() == :prod, do: prod_log, else: "deuterium.log"),
+config :logger, :file,
+  path: "/var/deutexrium/latest.log",
   level: :info
 
 config :nostrum,
@@ -37,7 +33,3 @@ config :nostrum,
     :guild_messages,
     :message_content
   ]
-
-config :graceful_stop, :hooks, [
-  [Ctl, :shutdown, []]
-]

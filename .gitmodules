@@ -1,0 +1,3 @@
+[submodule "epmd_docker"]
+	path = epmd_docker
+	url = https://github.com/rlipscombe/epmd_docker

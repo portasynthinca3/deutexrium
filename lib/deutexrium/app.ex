@@ -8,7 +8,15 @@ defmodule Deutexrium.App do
 
   @impl true
   def start(_type, _args) do
-    Logger.info("Data path: #{Application.fetch_env!(:deutexrium, :data_path)}")
+    dir = Application.fetch_env!(:deutexrium, :data_path)
+    Logger.info("Data path: #{dir}")
+
+    :mnesia.wait_for_tables([
+      Markov.Database.Link,
+      Markov.Database.Master,
+      Markov.Database.Operation
+    ], 5000)
+
     Deutexrium.Sup.start_link([])
   end
 end

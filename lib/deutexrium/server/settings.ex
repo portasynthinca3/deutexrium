@@ -4,6 +4,7 @@ defmodule Deutexrium.Server.Settings do
   Supports a /settings session
   """
   alias Deutexrium.Server.{Channel, Guild, RqRouter}
+  import Deutexrium.Translation, only: [translate: 2]
 
   defmodule State do
     @moduledoc "Setting server state"
@@ -11,47 +12,39 @@ defmodule Deutexrium.Server.Settings do
               channel: nil,
               context: :guild,
               timeout: 60_000,
-              inter: :nil
+              inter: nil
   end
 
   @settings [
-    %{value: :train,
-      name: "Train model"},
-
-    %{value: :global_train,
-      name: "Train global model"},
-
-    %{value: :ignore_bots,
-      name: "Ignore bots"},
-
-    %{value: :remove_mentions,
-      name: "Remove mentions and links"},
+    %{value: :train},
+    %{value: :global_train},
+    %{value: :ignore_bots},
+    %{value: :remove_mentions},
 
     %{value: :autogen_rate,
       type: :int,
-      range: 0..1000,
-      name: "Automatic generation rate"},
+      range: 0..1000},
 
     %{value: :max_gen_len,
       type: :int,
-      range: 1..25,
-      name: "Top /gen option value"},
+      range: 1..25},
 
     %{value: :impostor_rate,
       type: :int,
-      range: 0..100,
-      name: "Impersonation rate"}
+      range: 0..100}
   ]
 
 
-  defp generate_bin_button(settings, setting) do
+  defp generate_bin_button(settings, setting, locale) do
     value = Map.get(settings, setting.value)
 
     val_to_str = &case &1 do
-      nil -> "no override"
-      true -> "on"
-      false -> "off"
+      nil -> translate(locale, "setting.bin_value.no_override")
+      true -> translate(locale, "setting.bin_value.on")
+      false -> translate(locale, "setting.bin_value.off")
     end
+
+    title = translate(locale, "setting.name.#{:erlang.atom_to_binary(setting.value)}")
 
     %{
       type: 2, # button
@@ -60,21 +53,22 @@ defmodule Deutexrium.Server.Settings do
         true -> 3 # green
         false -> 4 # red
       end,
-      label: "#{setting.name}: #{val_to_str.(value)}",
+      label: "#{title}: #{val_to_str.(value)}",
       custom_id: :erlang.atom_to_binary(setting.value)
     }
   end
 
-  defp generate_nb_row(settings, setting) do
+  defp generate_nb_row(settings, setting, locale) do
     value = Map.get(settings, setting.value)
-    value_label = if value == nil do "no override" else value end
+    value_label = if value == nil do translate(locale, "setting.bin_value.no_override") else value end
 
     disabled = &if :erlang.is_integer(value) do
       value + &1 not in setting.range
     else true end
 
+    title = translate(locale, "setting.name.#{:erlang.atom_to_binary(setting.value)}")
     %{type: 1, components: [
-      %{type: 2, label: "#{setting.name}: #{value_label}", custom_id: "nil_#{setting.value}", style: 2},
+      %{type: 2, label: "#{title}: #{value_label}", custom_id: "nil_#{setting.value}", style: 2},
       %{type: 2, label: "-10", style: 2, custom_id: "int_#{setting.value}-10", disabled: disabled.(-10)},
       %{type: 2, label: "-1", style: 2, custom_id: "int_#{setting.value}-1", disabled: disabled.(-1)},
       %{type: 2, label: "+1", style: 2, custom_id: "int_#{setting.value}+1", disabled: disabled.(+1)},
@@ -101,13 +95,13 @@ defmodule Deutexrium.Server.Settings do
 
     # construct lines for binary settings
     bin_rows = bin
-      |> Enum.map(&generate_bin_button(settings, &1))
+      |> Enum.map(&generate_bin_button(settings, &1, state.inter.locale))
       |> Enum.chunk_every(5)
       |> Enum.map(&%{type: 1, components: &1}) # make each row into a map
 
     # construct lines for nb settings
     nb_rows = nonbin
-      |> Enum.map(&generate_nb_row(settings, &1))
+      |> Enum.map(&generate_nb_row(settings, &1, state.inter.locale))
 
     [
       # channel select
@@ -119,7 +113,7 @@ defmodule Deutexrium.Server.Settings do
             %{
               label: "Server",
               value: "server",
-              description: "Applies to all channels, except when they're overridden",
+              description: translate(state.inter.locale, "setting.server"),
               emoji: %{name: "server", id: "974707196573143120"},
               default: state.context == :guild
             } | Enum.map(channels, &%{
@@ -127,7 +121,7 @@ defmodule Deutexrium.Server.Settings do
               value: &1.id,
               emoji: %{name: "channel", id: "974705757691981894"},
               default: state.context == &1.id,
-              description: if state.channel == &1.id do "Current channel" else nil end
+              description: if state.channel == &1.id do translate(state.inter.locale, "setting.current") else nil end
             })
           ]
         }
@@ -146,17 +140,17 @@ defmodule Deutexrium.Server.Settings do
 
   @impl true
   def handle_call({:initialize, inter}, _from, %State{} = state) do
-    {:reply, generate_components(state), %{
-      state | inter: inter
-    }, state.timeout}
+    state = %{state | inter: inter}
+    {:reply, generate_components(state), state, state.timeout}
   end
 
-  def handle_call({:switch_ctx, ctx}, _from, %State{} = state) do
-    state = %{state | context: ctx}
-    {:reply, {state.inter, generate_components(state)}, state, state.timeout}
+  def handle_call({:switch_ctx, inter, ctx}, _from, %State{} = state) do
+    old_inter = state.inter
+    state = %{state | context: ctx, inter: inter}
+    {:reply, {old_inter, generate_components(state)}, state, state.timeout}
   end
 
-  def handle_call({:clicked, setting}, _from, %State{} = state) do
+  def handle_call({:clicked, inter, setting}, _from, %State{} = state) do
     get_meta = &case &1 do
       :cur -> case state.context do
         :guild -> Guild.get_meta(state.guild)
@@ -209,7 +203,10 @@ defmodule Deutexrium.Server.Settings do
       end
     end
 
-    {:reply, {state.inter, generate_components(state)}, state, state.timeout}
+    old_inter = state.inter
+    state = %{state | inter: inter}
+
+    {:reply, {old_inter, generate_components(state)}, state, state.timeout}
   end
 
 
@@ -222,20 +219,18 @@ defmodule Deutexrium.Server.Settings do
 
   # API
 
-  @type id() :: {integer(), integer()}
-
-  @spec initialize(id(), any) :: %{}
-  def initialize(id, inter) do
-    id |> RqRouter.route_to_settings({:initialize, inter})
+  @spec initialize(any()) :: %{}
+  def initialize(inter) do
+    RqRouter.route_to_settings({inter.channel_id, inter.guild_id}, {:initialize, inter})
   end
 
-  @spec switch_ctx(id(), :guild|integer()) :: {any, %{}}
-  def switch_ctx(id, ctx) do
-    id |> RqRouter.route_to_settings({:switch_ctx, ctx})
+  @spec switch_ctx(any(), :guild|integer()) :: {any, %{}}
+  def switch_ctx(inter, ctx) do
+    RqRouter.route_to_settings({inter.channel_id, inter.guild_id}, {:switch_ctx, inter, ctx})
   end
 
-  @spec clicked(id(), String.t()) :: {any, %{}}
-  def clicked(id, setting) do
-    id |> RqRouter.route_to_settings({:clicked, setting})
+  @spec clicked(any(), String.t()) :: {any, %{}}
+  def clicked(inter, setting) do
+    RqRouter.route_to_settings({inter.channel_id, inter.guild_id}, {:clicked, inter, setting})
   end
 end
