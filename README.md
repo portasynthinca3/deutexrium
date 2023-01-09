@@ -12,15 +12,15 @@ Please note that Deuterium uses a [custom permissive license](LICENSE.md). It's 
 
 This app is dockerized, so it can be deployed in a few simple steps:
   1. Create the data volume: `docker volume create --driver local --opt type=none --opt device=/path/on/the/host/where/data/will/be/stored --opt o=bind deut_data`
-  2. Download: `git clone https://github.com/portasynthinca3/deutexrium.ex --recursive-submodules && cd deutexrium`
-  3. Save your Discord bot token: `printf "DEUTEX_TOKEN=Y0uЯ-t0k3n" > .env`
-  4. Build `epmd_docker`: `cd epmd_docker && make && cd ..`
-  4. Build the container: `DOCKER_BUILDKIT=1 docker build .`
-  5. Run the container: `docker run --mount source=deut_data,target=/var/deutexrium --env-file .env -d deuterium`
+  2. Save your Discord bot token: `printf "DEUTEX_TOKEN=Y0uЯ-t0k3n" > .env`
+  3. Pull the image: `docker pull ghcr.io/portasynthinca3/deutexrium:2.0.2`
+  4. Run the container: `docker run --mount source=deut_data,target=/var/deutexrium --env-file .env -d deutexrium`
 
 To connect to an IEx shell to a locally running container:
-  1. Run `docker ps` and find out the ID of the container
-  2. Run `./remsh.sh c0nta1n3r-1d`
+  1. Download `epmd_docker`: `git clone https://github.com/rlipscombe/epmd_docker.git && cd epmd_docker`
+  2. Build `epmd_docker`: `make`
+  3. Run `docker ps` and find out the ID of the container
+  4. Run `iex --erl "-pa ebin -epmd_module epmd_docker -setcookie deutexrium -sname shell" --remsh deuterium@c0nta1ner-1d`
 
 On first startup and when updating the bot register slash commands using the shell (one of):
   * `Ctl.add_slash_commands` to register them globally (takes about an hour to update across all servers)
