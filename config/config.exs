@@ -26,7 +26,6 @@ config :logger, :file,
   level: :info
 
 config :nostrum,
-  token: System.get_env("DEUTEX_TOKEN"),
   num_shards: :auto,
   gateway_intents: [
     :guilds,

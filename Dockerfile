@@ -8,14 +8,13 @@ COPY mix.exs mix.exs
 COPY mix.lock mix.lock
 
 RUN apk add build-base libexecinfo-dev
-RUN --mount=type=secret,id=token export DEUTEX_TOKEN=`cat /run/secrets/token` && \
-    export MIX_ENV=prod && \
+RUN export MIX_ENV=prod && \
     rm -rf _build && \
     mix deps.get && \
     mix release
 
 RUN mkdir /export && \
-    cp -r _build/prod/rel/default/ /export
+    cp -r _build/prod/rel/deutexrium/ /export
 
 # deploy
 FROM alpine:3.16
@@ -27,5 +26,5 @@ COPY --from=build /export/ /opt/app
 RUN apk add libstdc++ libgcc ncurses-libs libexecinfo
 
 EXPOSE 4369
-ENTRYPOINT ["/opt/app/default/bin/default"]
+ENTRYPOINT ["/opt/app/deutexrium/bin/deutexrium"]
 CMD ["start"]

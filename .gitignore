@@ -29,3 +29,4 @@ build.sh
 ltemplate.txt
 release.tar.gz
 /token
+.env
