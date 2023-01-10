@@ -13,10 +13,10 @@ Please note that Deuterium uses a [custom permissive license](LICENSE.md). It's 
 This app is dockerized, so it can be deployed in a few simple steps:
   1. Create the data volume: `docker volume create --driver local --opt type=none --opt device=/path/on/the/host/where/data/will/be/stored --opt o=bind deut_data`
   2. Save your Discord bot token: `printf "DEUTEX_TOKEN=Y0uЯ-t0k3n" > .env`
-  3. Pull the image: `docker pull ghcr.io/portasynthinca3/deutexrium:2.0.2`
+  3. Pull the image: `docker pull ghcr.io/portasynthinca3/deutexrium:2.0.3`
   4. Run the container: `docker run --mount source=deut_data,target=/var/deutexrium --env-file .env -d deutexrium`
 
-To connect to an IEx shell to a locally running container:
+To connect an IEx shell to a locally running container:
   1. Download `epmd_docker`: `git clone https://github.com/rlipscombe/epmd_docker.git && cd epmd_docker`
   2. Build `epmd_docker`: `make`
   3. Run `docker ps` and find out the ID of the container
