@@ -289,17 +289,15 @@ defmodule Deutexrium do
     end
   end
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{custom_id: "settings_target", values: [value]}} = inter, _}) do
-    {old_inter, components} = Server.Settings.switch_ctx(inter, case value do
+    {_old_inter, components} = Server.Settings.switch_ctx(inter, case value do
       "server" -> :guild
       str -> :erlang.binary_to_integer(str)
     end)
-    Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
-    Api.delete_interaction_response!(old_inter)
+    Api.create_interaction_response!(inter, %{type: 7, data: %{components: components, flags: 64}})
   end
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{component_type: 2, custom_id: id}} = inter, _}) do
-    {old_inter, components} = Server.Settings.clicked(inter, id)
-    Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
-    Api.delete_interaction_response!(old_inter)
+    {_old_inter, components} = Server.Settings.clicked(inter, id)
+    Api.create_interaction_response!(inter, %{type: 7, data: %{components: components, flags: 64}})
   end
 
 
