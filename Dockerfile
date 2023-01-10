@@ -17,7 +17,7 @@ RUN mkdir /export && \
     cp -r _build/prod/rel/deutexrium/ /export
 
 # deploy
-FROM alpine:3.16
+FROM bitwalker/alpine-elixir:1.14
 
 ENV REPLACE_OS_VARS=true
 ENV RELEASE_NODE=deuterium
@@ -25,6 +25,10 @@ RUN mkdir -p /opt/app
 COPY --from=build /export/ /opt/app
 RUN apk add libstdc++ libgcc ncurses-libs libexecinfo
 
+RUN printf "-kernel inet_dist_listen_min 25565 inet_dist_listen_max 25565" > vm.args
+ENV RELEASE_VM_ARGS=vm.args
+
 EXPOSE 4369
+EXPOSE 25565
 ENTRYPOINT ["/opt/app/deutexrium/bin/deutexrium"]
 CMD ["start"]
