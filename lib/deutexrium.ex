@@ -192,6 +192,7 @@ defmodule Deutexrium do
         |> put_color(0xe6f916)
         |> put_field(translate(locale, "response.support.server"), "https://discord.gg/N52uWgD")
         |> put_field(translate(locale, "response.support.email"), "`portasynthinca3 (at) gmail.com`")
+        |> put_field(translate(locale, "response.support.debug"), "`#{inter.guild_id}, #{inter.channel_id}`")
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end

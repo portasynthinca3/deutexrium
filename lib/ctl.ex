@@ -10,6 +10,7 @@ defmodule Ctl do
   defdelegate migrate(channel_id), to: Deutexrium.Util.Migrate
   defdelegate migrate_all(), to: Deutexrium.Util.Migrate
   defdelegate observer, to: :observer_cli, as: :start
+  defdelegate reload_langs, to: Translation, as: :reload
 
   def unload(resource), do:
     GenServer.cast({:via, Registry, {Registry.Server, resource}}, {:shutdown, false})

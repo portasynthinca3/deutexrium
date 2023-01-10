@@ -155,7 +155,8 @@
         "support": {
             "title": "Deuterium support",
             "server": ":eye: Support server",
-            "email": ":e_mail: Email"
+            "email": ":e_mail: Email",
+            "debug": ":lady_beetle: Debug info"
         },
         "status": {
             "title": "Deuterium status",

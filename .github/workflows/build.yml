@@ -3,6 +3,10 @@ on:
   release:
     types: [ published ]
 
+  push:
+    branches:
+      - master
+
 jobs:
   docker_publish:
     runs-on: "ubuntu-20.04"
