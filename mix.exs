@@ -19,7 +19,7 @@ defmodule Deutexrium.MixProject do
   def application do
     [
       mod: {Deutexrium.App, []},
-      extra_applications: [:logger, :os_mon, :gun, :tools, :mnesia, :observer]
+      extra_applications: [:logger, :os_mon, :gun, :tools, :mnesia]
     ]
   end
 
