@@ -2,8 +2,8 @@ import Config
 
 config :deutexrium,
   data_path: "/var/deutexrium/data",
-  channel_unload_timeout: 3 * 60 * 1000, # milliseconds
-  guild_unload_timeout: 4 * 60 * 1000,
+  channel_unload_timeout: 3 * 1000, # milliseconds
+  guild_unload_timeout: 4 * 1000,
   default_router_cnt: 4,
   log_interval: 2000,
   node_voice_server: {'localhost', 2700}

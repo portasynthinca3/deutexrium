@@ -305,6 +305,8 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "impostor"}} = inter, _}) do
+    Api.create_interaction_response(inter, %{type: 5, data: %{flags: 64}})
+
     response = if check_admin_perm(inter) do
       # delete existing webhook
       case Server.Channel.get_meta({inter.channel_id, inter.guild_id}).webhook_data do
@@ -326,7 +328,8 @@ defmodule Deutexrium do
     else
       translate(inter.locale, "response.missing_admin")
     end
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: response, flags: 64}})
+
+    Api.edit_interaction_response!(inter, %{content: response})
   end
 
 
