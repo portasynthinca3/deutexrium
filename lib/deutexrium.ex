@@ -64,6 +64,8 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "generate"}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5})
+
     id = {inter.channel_id, inter.guild_id}
     count = if inter.data.options == nil do
       1
@@ -76,48 +78,52 @@ defmodule Deutexrium do
       sentences = for _ <- 1..count, do: elem(Server.Channel.generate(id), 0)
       if :error in sentences do
         Logger.error("generation failed")
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.generate.gen_failed")}})
+        Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.generate.gen_failed")})
       else
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: Enum.join(sentences, " ")}})
+        Api.edit_interaction_response!(inter, %{content: Enum.join(sentences, " ")})
       end
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.generate.val_too_big"), flags: 64}})
+      Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.generate.val_too_big")})
     end
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_by_them", target_id: user_id}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5})
+
     id = {inter.channel_id, inter.guild_id}
     case Server.Channel.generate(id, user_id) do
       {_text, _author} = data ->
         webhook = Server.Channel.get(id, :webhook_data)
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: case webhook do
-          {_, _} -> translate(inter.locale, "response.gen_by_them.normal")
-          nil -> translate(inter.locale, "response.gen_by_them.no_impostor")
-        end, flags: 64}})
+        Api.delete_interaction_response!(inter)
         try_sending_webhook(data, inter.channel_id, webhook, inter.guild_id)
 
       :error ->
-        Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.gen_by_them.no_data", ["<@#{user_id}>"]), flags: 64}})
+        Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.gen_by_them.no_data", ["<@#{user_id}>"])})
     end
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "generate_from", options: [%{name: "channel", value: channel}]}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5})
     text = case Server.Channel.generate({channel, inter.guild_id}) do
       :error -> translate(inter.locale, "response.generate.gen_failed")
       {text, _} -> text
     end
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    Api.edit_interaction_response!(inter, %{content: text})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "gen_global"}} = inter, _}) do
-    {text, _} = Server.Channel.generate({0, 0})
-    Api.create_interaction_response(inter, %{type: 4, data: %{content: text}})
+    Api.create_interaction_response!(inter, %{type: 5})
+    text = case Server.Channel.generate({0, 0}) do
+      :error -> translate(inter.locale, "response.generate.gen_failed")
+      {text, _} -> text
+    end
+    Api.edit_interaction_response!(inter, %{content: text})
   end
 
 
@@ -250,6 +256,7 @@ defmodule Deutexrium do
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "scoreboard"}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5})
     %{user_stats: scoreboard} = Server.Guild.get_meta(inter.guild_id)
 
     embed = %Struct.Embed{} |> put_title(translate(inter.locale, "response.scoreboard.title"))
@@ -260,21 +267,23 @@ defmodule Deutexrium do
       {idx + 1, acc |> put_field("##{idx}", translate(inter.locale, "response.scoreboard.row", ["<@#{k}>", "#{v}"]))}
     end)
 
-    Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
+    Api.edit_interaction_response!(inter, %{embeds: [embed]})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target}]}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5, data: %{flags: 64}})
+
     if check_admin_perm(inter) do
       :ok = case target do
         "server" -> Server.Guild.reset(inter.guild_id, :settings)
         "settings" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
         "model" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
       end
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.reset.#{target}"), flags: 64}})
+      Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.reset.#{target}")})
     else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.missing_admin"), flags: 64}})
+      Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.missing_admin")})
     end
   end
 
