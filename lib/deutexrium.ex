@@ -131,19 +131,15 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "pre_train"}} = inter, _}) do
     Api.create_interaction_response!(inter, %{type: 5, data: %{flags: 64}})
 
-    if check_admin_perm(inter) do
-      count = case inter.data.options do
-        nil -> 1000
-        [%{name: "count", value: val}] -> val
-      end
+    count = case inter.data.options do
+      nil -> 1000
+      [%{name: "count", value: val}] -> val
+    end
 
-      if count <= 10_000 do
-        Server.Channel.start_pre_train({inter.channel_id, inter.guild_id}, inter, count, locale)
-      else
-        Api.edit_interaction_response!(inter, %{content: translate(locale, "response.pre_train.error.too_much")})
-      end
+    if count <= 10_000 do
+      Server.Channel.start_pre_train({inter.channel_id, inter.guild_id}, inter, count, locale)
     else
-      Api.edit_interaction_response!(inter, %{content: translate(locale, "response.missing_admin")})
+      Api.edit_interaction_response!(inter, %{content: translate(locale, "response.pre_train.error.too_much")})
     end
   end
 
@@ -171,7 +167,9 @@ defmodule Deutexrium do
     embed = embed
       |> put_field(translate(locale, "response.help.admin"), translate(locale, "response.help.admin_sub"))
       |> put_field(translate(locale, "command.settings.title"), translate(locale, "response.help.settings"), true)
+      |> put_field(translate(locale, "command.reset.title"), translate(locale, "response.help.reset"), true)
       |> put_field(translate(locale, "command.impostor.title"), translate(locale, "response.help.impostor"), true)
+      |> put_field(translate(locale, "command.pre_train.title"), translate(locale, "response.help.pre_train"), true)
 
     Api.create_interaction_response(inter, %{type: 4, data: %{embeds: [embed], flags: 64}})
   end
@@ -296,27 +294,19 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "reset", options: [%{name: target}]}} = inter, _}) do
     Api.create_interaction_response!(inter, %{type: 5, data: %{flags: 64}})
 
-    if check_admin_perm(inter) do
-      :ok = case target do
-        "server" -> Server.Guild.reset(inter.guild_id, :settings)
-        "settings" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
-        "model" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
-      end
-      Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.reset.#{target}")})
-    else
-      Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.missing_admin")})
+    :ok = case target do
+      "server" -> Server.Guild.reset(inter.guild_id, :settings)
+      "settings" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :settings)
+      "model" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
     end
+    Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.reset.#{target}")})
   end
 
 
 
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "settings"}} = inter, _}) do
-    if check_admin_perm(inter) do
-      components = Server.Settings.initialize(inter)
-      Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
-    else
-      Api.create_interaction_response(inter, %{type: 4, data: %{content: translate(inter.locale, "response.missing_admin"), flags: 64}})
-    end
+    components = Server.Settings.initialize(inter)
+    Api.create_interaction_response!(inter, %{type: 4, data: %{components: components, flags: 64}})
   end
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{custom_id: "settings_target", values: [value]}} = inter, _}) do
     {_old_inter, components} = Server.Settings.switch_ctx(inter, case value do
@@ -335,26 +325,23 @@ defmodule Deutexrium do
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "impostor"}} = inter, _}) do
     Api.create_interaction_response(inter, %{type: 5, data: %{flags: 64}})
 
-    response = if check_admin_perm(inter) do
-      # delete existing webhook
-      case Server.Channel.get_meta({inter.channel_id, inter.guild_id}).webhook_data do
-        {id, _token} -> Api.delete_webhook(id, "removing existing webhook before adding a new one")
-        _ -> :ok
-      end
-      # create new webhook
-      case Api.create_webhook(inter.channel_id, %{name: "Deuterium impersonation mode", avatar: "https://cdn.discordapp.com/embed/avatars/0.png"}, "create webhook for impersonation") do
-        {:ok, %{id: hook_id, token: hook_token}} ->
-          data = {hook_id, hook_token}
-          Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
-          translate(inter.locale, "response.impostor.activated")
-        {:error, %{status_code: 403}} ->
-          translate(inter.locale, "response.impostor.webhook_error")
-        {:error, err} ->
-          Logger.error("error adding webhook: #{inspect err}")
-          translate(inter.locale, "response.unknown_error")
-      end
-    else
-      translate(inter.locale, "response.missing_admin")
+    # delete existing webhook
+    case Server.Channel.get_meta({inter.channel_id, inter.guild_id}).webhook_data do
+      {id, _token} -> Api.delete_webhook(id, "removing existing webhook before adding a new one")
+      _ -> :ok
+    end
+
+    # create new webhook
+    response = case Api.create_webhook(inter.channel_id, %{name: "Deuterium impersonation mode", avatar: "https://cdn.discordapp.com/embed/avatars/0.png"}, "create webhook for impersonation") do
+      {:ok, %{id: hook_id, token: hook_token}} ->
+        data = {hook_id, hook_token}
+        Server.Channel.set({inter.channel_id, inter.guild_id}, :webhook_data, data)
+        translate(inter.locale, "response.impostor.activated")
+      {:error, %{status_code: 403}} ->
+        translate(inter.locale, "response.impostor.webhook_error")
+      {:error, err} ->
+        Logger.error("error adding webhook: #{inspect err}")
+        translate(inter.locale, "response.unknown_error")
     end
 
     Api.edit_interaction_response!(inter, %{content: response})
@@ -365,12 +352,6 @@ defmodule Deutexrium do
   def handle_event(_event) do
     :ok
     # Logger.warn("unknown event: #{inspect event}")
-  end
-
-  defp check_admin_perm(inter) do
-    guild = Nostrum.Cache.GuildCache.get!(inter.guild_id)
-    perms = Nostrum.Struct.Guild.Member.guild_permissions(inter.member, guild)
-    :administrator in perms
   end
 
   defp simulate_typing(text, channel, hack, guild \\ nil, username \\ nil)

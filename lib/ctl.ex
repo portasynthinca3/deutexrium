@@ -22,6 +22,8 @@ defmodule Ctl do
     commands = [%{
       name: "reset",
       description: "reset something",
+      default_member_permissions: "0",
+      dm_permission: false,
       options: [
         %{
           type: 1, # subcommand
@@ -43,19 +45,23 @@ defmodule Ctl do
 
     # zero-parameter commands
     no_param = [
-      {"status", "key statistics"},
-      {"stats", "my resource usage. this isn't particularly interesting"},
-      {"gen_global", "immediately generate a message using the global model"},
-      {"donate", "ways to support me"},
-      {"privacy", "privacy policy"},
-      {"support", "ways to get support"},
-      {"scoreboard", "top-10 most active users on this server"},
-      {"impostor", "enable impersonation mode"},
-      {"settings", "configure settings"},
-      {"help", "show help"},
+      {"status", "key statistics", []},
+      {"stats", "my resource usage. this isn't particularly interesting", [:dm]},
+      {"gen_global", "immediately generate a message using the global model", []},
+      {"donate", "ways to support me", []},
+      {"privacy", "privacy policy", []},
+      {"support", "ways to get support", []},
+      {"scoreboard", "top-10 most active users on this server", []},
+      {"impostor", "enable impersonation mode", [:adm]},
+      {"settings", "configure settings", [:adm]},
+      {"help", "show help", []},
     ]
-    no_param = no_param |> Enum.map(fn {title, desc} ->
-      %{name: title, description: desc}
+    no_param = no_param |> Enum.map(fn {title, desc, flags} ->
+      cmd = %{name: title, description: desc, dm_permission: false}
+      Enum.reduce(flags, cmd, fn flag, cmd -> case flag do
+        :dm -> Map.put(cmd, :dm_permission, true)
+        :adm -> Map.put(cmd, :default_member_permissions, "0")
+      end end)
     end)
     commands = commands ++ no_param
 
@@ -63,6 +69,7 @@ defmodule Ctl do
     commands = [%{
       name: "generate",
       description: "generate message(s) using the current channel's model",
+      dm_permission: false,
       options: [
         %{
           type: 4, # integer
@@ -77,6 +84,8 @@ defmodule Ctl do
     commands = [%{
       name: "pre_train",
       description: "trains the local model on previous messages in this channel",
+      dm_permission: false,
+      default_member_permissions: "0",
       options: [
         %{
           type: 4, # integer
@@ -91,6 +100,7 @@ defmodule Ctl do
     commands = [%{
       name: "generate_from",
       description: "generate a message using the specified channel's model",
+      dm_permission: false,
       options: [
         %{
           type: 7, # channel
@@ -104,6 +114,7 @@ defmodule Ctl do
     # Generate by them
     commands = [%{
       name: "gen_by_them",
+      dm_permission: false,
       type: 2
     } | commands]
 
@@ -136,5 +147,9 @@ defmodule Ctl do
       {:ok, _} -> :ok
       error -> error
     end
+  end
+
+  def remove_slash_commands(guild) do
+    Api.bulk_overwrite_guild_application_commands(guild, [])
   end
 end

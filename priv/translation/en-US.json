@@ -130,9 +130,11 @@
             "support": ":thinking: ways to get support",
             "scoreboard": ":100: top-10 most active users in this server",
             "admin": "ADMIN COMMANDS",
-            "admin_sub": "can only be run by those with the \"administrator\" privilege",
+            "admin_sub": "can only be run by those with the \"administrator\" privilege (unless configured otherwise in Discord server settings)",
             "settings": ":gear: display the configuration modification menu",
-            "impostor": "<:amogus:887939317371138048> enable impersonation mode"
+            "impostor": "<:amogus:887939317371138048> enable impersonation mode",
+            "pre_train": ":rewind: trains the model on messages already present in this channel (even if I have just been added)",
+            "reset": ":x: resets the channel model, channel settings or server settings"
         },
         "donate": {
             "title": "Ways to support Deuterium",
@@ -217,8 +219,7 @@
             "activated": ":white_check_mark: **impersonation activated**",
             "webhook_error": ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)",
             "unknown_error": ":x: **unknown error**"
-        },
-        "missing_admin": ":x: **missing \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+        }
     },
 
     "setting": {
