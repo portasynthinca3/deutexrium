@@ -73,6 +73,20 @@ defmodule Ctl do
       ]
     } | commands]
 
+    # pre_train
+    commands = [%{
+      name: "pre_train",
+      description: "trains the local model on previous messages in this channel",
+      options: [
+        %{
+          type: 4, # integer
+          name: "count",
+          description: "the number of previous messages to train on; defaults to 1k, max is 10k",
+          required: false
+        }
+      ]
+    } | commands]
+
     # generate_from
     commands = [%{
       name: "generate_from",

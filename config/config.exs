@@ -6,7 +6,8 @@ config :deutexrium,
   guild_unload_timeout: 4 * 1000,
   default_router_cnt: 4,
   log_interval: 2000,
-  node_voice_server: {'localhost', 2700}
+  node_voice_server: {'localhost', 2700},
+  pre_train_batch_size: 100
 
 # assuming InfluxDB v1.x
 # refer to https://github.com/mneudert/instream#usage for v2 config examples

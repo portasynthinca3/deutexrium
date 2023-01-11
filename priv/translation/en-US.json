@@ -68,6 +68,16 @@
                 }
             }
         },
+        "pre_train": {
+            "title": "pre_train",
+            "description": "trains the local model on previous messages in this channel",
+            "option": {
+                "count": {
+                    "title": "count",
+                    "description": "the number of previous messages to train on; defaults to 1k, max is 10k"
+                }
+            }
+        },
         "generate_from": {
             "title": "generate_from",
             "description": "generate a message using the specified channel's model",
@@ -87,6 +97,17 @@
         "generate": {
             "gen_failed": ":x: **generation failed**",
             "val_too_big": ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+        },
+        "pre_train": {
+            "error": {
+                "fetch_failed": ":x: **failed to fetch messages**",
+                "too_much": ":x: **too much messages requested (max is `10000`)**"
+            },
+            "progress": "$1 **trained on `$2` out of `$3` requested messages (skipped `$4`)**\n$5",
+            "hint": {
+                "okay": "hint: the requested amount was not reached because there aren't that many messages in this channel or some of them don't contain text",
+                "empty": "hint: no messages were trained on because there are no messages in this channel, none of them contain text or I am missing the \"Read Message History\" permission in this channel"
+            }
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **the response will be sent shortly**",

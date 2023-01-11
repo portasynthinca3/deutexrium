@@ -128,6 +128,27 @@ defmodule Deutexrium do
 
 
 
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "pre_train"}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5, data: %{flags: 64}})
+
+    if check_admin_perm(inter) do
+      count = case inter.data.options do
+        nil -> 1000
+        [%{name: "count", value: val}] -> val
+      end
+
+      if count <= 10_000 do
+        Server.Channel.start_pre_train({inter.channel_id, inter.guild_id}, inter, count, locale)
+      else
+        Api.edit_interaction_response!(inter, %{content: translate(locale, "response.pre_train.error.too_much")})
+      end
+    else
+      Api.edit_interaction_response!(inter, %{content: translate(locale, "response.missing_admin")})
+    end
+  end
+
+
+
   def handle_event({:INTERACTION_CREATE, %Struct.Interaction{locale: locale, data: %{name: "help"}} = inter, _}) do
     embed = %Struct.Embed{}
       |> put_title(translate(locale, "response.help.header"))

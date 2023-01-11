@@ -29,7 +29,7 @@ defmodule Deutexrium.Server.RqRouter do
   @spec route({server_type, integer | {integer, integer}}, any) :: any
   def route({type, _id} = what, rq) when is_server_type(type) do
     # big timeout for slow servers
-    ensure(what) |> GenServer.call(rq, 15_000)
+    ensure(what) |> GenServer.call(rq, 10_000)
   end
 
   @spec route_to_guild(integer, any) :: any

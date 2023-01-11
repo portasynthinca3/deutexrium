@@ -12,12 +12,13 @@ defmodule Deutexrium.Server.Channel do
   alias Server.RqRouter
 
   defmodule State do
-    defstruct [:id, :meta, :model, :timeout]
+    defstruct [:id, :meta, :model, :timeout, :pre_train]
     @type t :: %__MODULE__{
       id: {channel :: non_neg_integer(), guild :: non_neg_integer()},
       meta: Meta.t(),
       model: Markov.model_reference,
-      timeout: non_neg_integer()
+      timeout: non_neg_integer(),
+      pre_train: nil
     }
   end
 
@@ -91,7 +92,8 @@ defmodule Deutexrium.Server.Channel do
       id: {id, guild},
       model: model,
       meta: meta,
-      timeout: timeout
+      timeout: timeout,
+      pre_train: nil
     }, timeout}
   end
 
@@ -149,6 +151,17 @@ defmodule Deutexrium.Server.Channel do
     {:reply, generate_message(state.model, filter, prompt, user_id), state, state.timeout}
   end
 
+  def handle_call({:start_pre_train, inter, count, locale}, _from, state) do
+    {cid, _} = state.id
+
+    Logger.info("channel-#{cid} server: starting pre-train")
+    state = %{state | pre_train: {inter, {0, count, 0}, DateTime.utc_now |> Nostrum.Snowflake.from_datetime!, nil, locale}}
+    send(self(), :continue_pre_train)
+    send_pre_train_status(:working, state.pre_train)
+
+    {:reply, :ok, state, state.timeout}
+  end
+
   def handle_call({:reset, :settings}, _from, state) do
     {cid, _} = state.id
     Logger.info("channel-#{cid} server: settings reset")
@@ -160,9 +173,10 @@ defmodule Deutexrium.Server.Channel do
   def handle_call({:reset, :model}, _from, state) do
     {cid, _} = state.id
     state = %{state | meta: %{state.meta | total_msgs: 0, global_trained_on: 0}}
+    Markov.unload(state.model)
     File.rm_rf(Persistence.root_for(cid))
     Logger.info("channel-#{cid} server: model reset")
-    {:stop, :reset, :ok, state}
+    {:stop, {:shutdown, :reset}, :ok, state}
   end
 
   def handle_call({:set, setting, val}, _from, state) do
@@ -178,7 +192,70 @@ defmodule Deutexrium.Server.Channel do
   def handle_call(:shutdown, _from, state), do: {:stop, :shutdown, :ok, state}
   def handle_info(:timeout, state), do: {:stop, :shutdown, state}
 
-  def terminate(:reset, _state), do: :ok
+  def handle_info(:continue_pre_train, %State{id: {cid, _}} = state) do
+    {inter, {fetched, limit, skipped}, before, last, locale} = state.pre_train
+    batch_size = Application.fetch_env!(:deutexrium, :pre_train_batch_size)
+    requesting = min(limit - fetched, batch_size)
+
+    state = case Nostrum.Api.get_channel_messages(cid, requesting, {:before, before}) do
+      {:ok, messages} ->
+        Logger.info("channel-#{cid} server: pre_train: got #{length(messages)} messages")
+        messages = Enum.reverse([last | messages])
+
+        [last | _] = for pair <- Markov.ListUtil.overlapping_stride(messages, 2) do
+          case pair do
+            [nil, nil] ->
+              nil
+
+            [a, b] when a.content == "" ->
+              b
+
+            [a, nil] ->
+              Markov.train(state.model, "#{a.author.id} #{a.content}", [{:author, a.author.id}])
+              Deutexrium.Influx.LoadCntr.add(:train)
+              a
+
+            [a, b] ->
+              Markov.Prompt.train(state.model, "#{a.author.id} #{a.content}", "#{b.author.id} #{b.content}", [{:author, a.author.id}])
+              Deutexrium.Influx.LoadCntr.add(:train)
+              a
+          end
+        end
+
+        skipped_in_batch = Enum.count(messages, fn x -> x != nil and x.content == "" end)
+        fetched = fetched + length(messages) - 1 - skipped_in_batch
+        skipped = skipped + skipped_in_batch
+        before = if Enum.at(messages, 0) != nil, do: Enum.at(messages, 0).id, else: before
+        state = %{state |
+          pre_train: {inter, {fetched, limit, skipped}, before, last, locale},
+          meta: %{state.meta |
+            total_msgs: state.meta.total_msgs + length(messages) - 1 - skipped_in_batch
+          }
+        }
+
+        if length(messages) == requesting + 1 do
+          send_pre_train_status(:working, state.pre_train)
+          send(self(), :continue_pre_train)
+          state
+        else
+          send_pre_train_status(:done, state.pre_train)
+          %{state | pre_train: nil}
+        end
+
+      _ when requesting < 1 ->
+        send_pre_train_status(:done, state.pre_train)
+        %{state | pre_train: nil}
+
+      err ->
+        Logger.error("channel-#{cid} server: pre_train: failed to fetch messages #{inspect err}")
+        send_pre_train_status(:error, state.pre_train)
+        %{state | pre_train: nil}
+    end
+
+    {:noreply, state}
+  end
+
+  def terminate({:shutdown, :reset}, _state), do: :ok
   def terminate(_reason, state), do: dump(state)
 
   defp dump(%State{} = state) do
@@ -187,6 +264,34 @@ defmodule Deutexrium.Server.Channel do
     Meta.dump!(cid, state.meta)
     Markov.unload(state.model)
     Logger.info("channel-#{cid} server: unloaded")
+  end
+
+  defp send_pre_train_status(status, {inter, {fetched, limit, skipped}, _, _, locale}) do
+    emoji = cond do
+      status == :working -> ":arrows_clockwise:"
+      status == :done and fetched == 0 -> ":question:"
+      status == :done -> ":white_check_mark:"
+      status == :error -> ":x:"
+    end
+
+    percent = div(fetched * 100, limit)
+    full_bars = div(percent, 5)
+    empty_bars = 20 - full_bars
+    bar = "(#{String.duplicate("━", full_bars)}#{String.duplicate("┈", empty_bars)}) #{percent}%"
+
+    bar = cond do
+      status == :done and fetched == 0 ->
+        "#{bar}\n#{Deutexrium.Translation.translate(locale, "response.pre_train.hint.empty")}"
+      status == :done and fetched < limit ->
+        "#{bar}\n*#{Deutexrium.Translation.translate(locale, "response.pre_train.hint.okay")}*"
+      status == :error ->
+        "#{bar}\n*#{Deutexrium.Translation.translate(locale, "response.pre_train.error.fetch_failed")}*"
+      true -> bar
+    end
+
+    string = Deutexrium.Translation.translate(locale, "response.pre_train.progress",
+      [emoji, "#{fetched}", "#{limit}", "#{skipped}", bar])
+    Nostrum.Api.edit_interaction_response(inter, %{content: string})
   end
 
   # ===== API =====
@@ -207,6 +312,10 @@ defmodule Deutexrium.Server.Channel do
   @spec generate(server_id(), integer() | nil, String.t() | nil) :: {String.t(), integer()} | :error
   def generate(id, user_id \\ nil, prompt \\ nil) when is_tuple(id) do
     id |> RqRouter.route_to_chan({:generate, user_id, prompt})
+  end
+
+  def start_pre_train(id, inter, count, locale) when is_tuple(id) and is_integer(count) do
+    id |> RqRouter.route_to_chan({:start_pre_train, inter, count, locale})
   end
 
   @spec reset(server_id(), atom()) :: :ok
