@@ -55,6 +55,7 @@ defmodule Ctl do
       {"impostor", "enable impersonation mode", [:adm]},
       {"settings", "configure settings", [:adm]},
       {"help", "show help", []},
+      {"first_time_setup", "interactive first time setup", []}
     ]
     no_param = no_param |> Enum.map(fn {title, desc, flags} ->
       cmd = %{name: title, description: desc, dm_permission: false}

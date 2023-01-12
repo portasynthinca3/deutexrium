@@ -90,6 +90,10 @@
         },
         "gen_by_them": {
             "title": "Generate message by them"
+        },
+        "first_time_setup": {
+            "title": "first_time_setup",
+            "description": "interactive first time setup"
         }
     },
 
@@ -131,7 +135,7 @@
             "scoreboard": ":100: top-10 most active users in this server",
             "admin": "ADMIN COMMANDS",
             "admin_sub": "can only be run by those with the \"administrator\" privilege (unless configured otherwise in Discord server settings)",
-            "settings": ":gear: display the configuration modification menu",
+            "settings": ":gear: display the configuration menu",
             "impostor": "<:amogus:887939317371138048> enable impersonation mode",
             "pre_train": ":rewind: trains the model on messages already present in this channel (even if I have just been added)",
             "reset": ":x: resets the channel model, channel settings or server settings"
@@ -239,5 +243,60 @@
         },
         "server": "Applied to all channels, except when they're overridden",
         "current": "Current channel"
+    },
+
+    "first_time_setup": {
+        "common": {
+            "bottom_row": {
+                "prev": "← Previous",
+                "abort": "⨯ Abort",
+                "next": "Next →",
+                "accept": "✓ Accept"
+            },
+            "channel_sel": {
+                "all": "All that you have access to",
+                "some": "Some of them",
+                "all_except": "All except some of them",
+                "none": "None of them",
+                "restriction": "Which ones?"
+            },
+            "guild_nb_setting": "Value: $1"
+        },
+        "steps": {
+            "welcome": ":wave: **Welcome to Deuterium interactive first-time setup!**\n- This is a step-by-step setup process\n- All changes you make here are not committed until you click \"Accept\" on the very last page",
+            "collection": ":books: I maintain a separate model for every channel. What channels do you want me to train on?",
+            "global_collection": ":book: I also maintain one global model, common for all channels in all servers. Which of your channels should I use to train that model?",
+            "mention_removal": ":wastebasket: I can also remove links and mentions from generation results. Which of the channels should I do that in?",
+            "autogen": ":robot: I will generate messages automatically without being asked to, 1 message per however many real human ones you want. Set the value below, or 0 if you don't want this functionality",
+            "impostor": ":disguised_face: I can imitate real people when autogenerating messages by copying their profile pictures and nicknames. Which of the channels should I do that in?",
+            "accept": {
+                "entry": {
+                    "train": "Training models",
+                    "global_train": "Training the global model on messages",
+                    "remove_mentions": "Removing links and mentions",
+                    "autogen_rate": "Generating one message every $1 human ones",
+                    "impostor": "Imitating real people"
+                },
+                "channels": {
+                    "all": "in all channels",
+                    "some": "only in $1",
+                    "all_except": "in all channels except $1",
+                    "none": "in none of the channels"
+                },
+                "text": ":star2: **Almost there**\nClick **Accept** to record all the changes you've made:\n$1\nAfter you click Accept you can edit the settings again with `/settings` or this command."
+            },
+            "applying": ":yawning_face: please wait while I record your changes",
+            "accepted": {
+                "error": {
+                    "impostor": "I was unable to configure impersonation in $1. Make sure I have the \"Manage Webhooks\" permission and run `/impostor` in those channels"
+                },
+                "text": {
+                    "things_to_do": "Top things to do now:\n      - use `/help` to discover my commands\n      - use `/pre_train` if you want to have fun straight away\n      - use `/settings` to reconfigure me",
+                    "ok": ":white_check_mark: **All done!**\nI have recorded your changes. $1",
+                    "error": ":warning: **Errors**\nI have recorded most of your changes, but there were some errors:\n$1\n$2"
+                }
+            },
+            "aborted": ":x: **Aborted**\nNone of the changes were saved"
+        }
     }
 }
