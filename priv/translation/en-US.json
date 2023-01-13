@@ -291,7 +291,7 @@
                     "impostor": "I was unable to configure impersonation in $1. Make sure I have the \"Manage Webhooks\" permission and run `/impostor` in those channels"
                 },
                 "text": {
-                    "things_to_do": "Top things to do now:\n      - use `/help` to discover my commands\n      - use `/pre_train` if you want to have fun straight away\n      - use `/settings` to reconfigure me",
+                    "things_to_do": "Top things to do now:\n      - use `/help` to discover my commands\n      - use `/pre_train` if you want to have fun straight away",
                     "ok": ":white_check_mark: **All done!**\nI have recorded your changes. $1",
                     "error": ":warning: **Errors**\nI have recorded most of your changes, but there were some errors:\n$1\n$2"
                 }
