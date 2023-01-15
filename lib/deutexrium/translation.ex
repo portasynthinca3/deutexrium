@@ -2,7 +2,8 @@ defmodule Deutexrium.Translation do
   use GenServer
   require Logger
   @moduledoc """
-  Reads localization JSONs and keeps them in a table
+  The server reads localization JSONs and keeps them in a table. Other functions
+  use the table to localize strings.
   """
 
   @fallback_lang "en-US"
