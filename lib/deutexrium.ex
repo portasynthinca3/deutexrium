@@ -308,7 +308,7 @@ defmodule Deutexrium do
     Api.create_interaction_response!(inter, %{type: 5})
     file = Deutexrium.Meme.generate({inter.channel_id, inter.guild_id}, inter.id)
     Api.edit_interaction_response!(inter, %{files: [file]})
-    # Deutexrium.Meme.cleanup(file)
+    Deutexrium.Meme.cleanup(file)
   end
 
 
