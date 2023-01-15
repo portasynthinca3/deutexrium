@@ -32,3 +32,9 @@ Contact me (`/support`) to get your data package. I'm working on a solution to d
 ## Modification
 This internal structure diagram might be helpful:\
 ![Internal structure](structure.png)
+
+## TODO
+  - bring back `/forget`
+  - bring back `/export`
+  - refactor the settings server (literal unreadable code atm)
+  - refactor the slash command handler (each command should be in a separate module)
