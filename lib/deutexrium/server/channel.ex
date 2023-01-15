@@ -4,6 +4,8 @@ defmodule Deutexrium.Server.Channel do
   and training of the associated Markov model
   """
 
+  @url_regex ~r"(((ht|f)tp(s?))\://)?(www.|[a-zA-Z].)[a-zA-Z0-9\-\.]+\.(com|edu|gov|mil|net|org|biz|info|name|museum|us|ca|uk)(\:[0-9]+)*(/($|[a-zA-Z0-9\.\,\;\?\'\\\+&%\$#\=~_\-]+))*"
+
   use GenServer
   require Logger
   alias Deutexrium.Persistence.Meta
@@ -102,27 +104,34 @@ defmodule Deutexrium.Server.Channel do
   def handle_call(:get_model, _from, state), do:
     {:reply, state.model, state, state.timeout}
 
-  def handle_call({:message, message, by_bot, author_id}, _from, state) do
+  def handle_call({:message, msg}, _from, state) do
     # don't train if ignoring bots
-    # credo:disable-for-next-line
-    unless by_bot and get_setting(state, :ignore_bots) do
+    unless msg.author.bot || false and get_setting(state, :ignore_bots) do
       # check training settings
       {cid, guild} = state.id
       train = cid == 0 or get_setting(state, :train)
       global_train = cid != 0 and get_setting(state, :global_train)
 
+      # save attachments
+      attachments = (msg.attachments |> Enum.map(fn x -> x.url end))
+        ++ (Regex.scan(@url_regex, msg.content) |> Enum.map(fn [str|_] -> str end))
+
+      File.open!(Persistence.root_for(cid) |> Path.join("media.list"), [:utf8, :append], fn file ->
+        IO.write(file, ["\n" | attachments |> Enum.join("\n")])
+      end)
+
       # train local model
-      state = if train do
+      state = if train and byte_size(msg.content) > 0 do
         Logger.info("channel-#{cid} server: training local model")
-        Markov.Prompt.train(state.model, "#{author_id} #{message}", state.meta.last_message, [{:author, author_id}])
+        Markov.Prompt.train(state.model, "#{msg.author.id} #{msg.content}", state.meta.last_message, [{:author, msg.author.id}])
         Deutexrium.Influx.LoadCntr.add(:train)
         %{state | meta: %{state.meta | total_msgs: state.meta.total_msgs + 1}}
       else state end
 
       # train global model
-      state = if global_train do
+      state = if global_train and byte_size(msg.content) > 0 do
         Logger.info("channel-#{cid} server: training global model")
-        handle_message({0, 0}, message, false, 0)
+        handle_message({0, 0}, msg.content)
         %{state | meta: %{state.meta | global_trained_on: state.meta.global_trained_on + 1}}
       else state end
 
@@ -131,17 +140,22 @@ defmodule Deutexrium.Server.Channel do
       reply = if (autorate > 0) and (:rand.uniform() <= 1.0 / autorate) do
         Logger.info("channel-#{cid} server: automatic generation")
         filter = cid == 0 or get_setting(state, :remove_mentions)
-        result = generate_message(state.model, filter, message)
+        result = generate_message(state.model, filter, msg.content)
         {:message, result}
       else :ok end
 
       # scoreboard
-      Server.Guild.scoreboard_add_one(guild, author_id)
+      Server.Guild.scoreboard_add_one(guild, msg.author.id)
 
-      {:reply, reply, %{state | meta: %{state.meta | last_message: message}}, state.timeout}
+      {:reply, reply, %{state | meta: %{state.meta | last_message: msg.content}}, state.timeout}
     else
       {:reply, :ok, state, state.timeout}
     end
+  end
+
+  def handle_call({:message, :bare, msg}, _from, state) do
+    Markov.Prompt.train(state.model, "0 #{msg}", state.meta.last_message, [{:author, 0}])
+    {:reply, :ok, %{state | meta: %{state.meta | last_message: msg}}, state.timeout}
   end
 
   def handle_call({:generate, user_id, prompt}, _from, state) do
@@ -304,10 +318,10 @@ defmodule Deutexrium.Server.Channel do
   @spec get_model(server_id()) :: Model.t()
   def get_model(id) when is_tuple(id), do: id |> RqRouter.route_to_chan(:get_model)
 
-  @spec handle_message(server_id(), String.t(), boolean(), integer()) :: :ok | {:message, {String.t(), integer()}}
-  def handle_message(id, msg, by_bot, author_id) when is_tuple(id) and is_binary(msg) and is_boolean(by_bot) and is_integer(author_id) do
-    id |> RqRouter.route_to_chan({:message, msg, by_bot, author_id})
-  end
+  @spec handle_message(Nostrum.Struct.Message.t) :: :ok | {:message, {String.t(), integer()}}
+  def handle_message(msg), do: {msg.channel_id, msg.guild_id} |> RqRouter.route_to_chan({:message, msg})
+  @spec handle_message(server_id(), String.t) :: :ok | {:message, {String.t(), integer()}}
+  def handle_message(id, text), do: id |> RqRouter.route_to_chan({:message, :bare, text})
 
   @spec generate(server_id(), integer() | nil, String.t() | nil) :: {String.t(), integer()} | :error
   def generate(id, user_id \\ nil, prompt \\ nil) when is_tuple(id) do
@@ -327,4 +341,16 @@ defmodule Deutexrium.Server.Channel do
 
   @spec get(server_id(), atom()) :: any()
   def get(id, setting) when is_tuple(id) and is_atom(setting), do: id |> RqRouter.route_to_chan({:get, setting})
+
+  @spec get_file(server_id(), Regex.t) :: String.t
+  def get_file({id, _}, path_pattern \\ ~r/.*/) do
+    uri_list = File.read!(Persistence.root_for(id) |> Path.join("media.list"))
+      |> String.split("\n")
+      |> Enum.filter(fn x ->
+        x != "" and String.match?(URI.new!(x).path, path_pattern)
+      end)
+
+    n = :rand.uniform(length(uri_list)) - 1
+    uri_list |> Enum.at(n)
+  end
 end

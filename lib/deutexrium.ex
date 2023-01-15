@@ -26,7 +26,7 @@ defmodule Deutexrium do
 
   def handle_event({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do
     self = msg.author.id == Nostrum.Cache.Me.get().id
-    unless self or msg.guild_id == nil or msg.channel_id == nil or byte_size(msg.content) == 0 do
+    unless self or msg.guild_id == nil or msg.channel_id == nil do
       # react to mentions and replies
       bot_id = Nostrum.Cache.Me.get().id
       reference = Map.get(msg, :referenced_message, nil)
@@ -44,7 +44,7 @@ defmodule Deutexrium do
         Api.create_message(msg.channel_id, content: text, message_reference: %{message_id: msg.id})
       else
         # only train if it doesn't contain bot mentions
-        case Server.Channel.handle_message({msg.channel_id, msg.guild_id}, msg.content, msg.author.bot || false, msg.author.id) do
+        case Server.Channel.handle_message(msg) do
           :ok -> :ok
           {:message, {text, author}} ->
             # see it it's impostor time
@@ -300,6 +300,15 @@ defmodule Deutexrium do
       "model" -> Server.Channel.reset({inter.channel_id, inter.guild_id}, :model)
     end
     Api.edit_interaction_response!(inter, %{content: translate(inter.locale, "response.reset.#{target}")})
+  end
+
+
+
+  def handle_event({:INTERACTION_CREATE, %Struct.Interaction{data: %{name: "meme"}} = inter, _}) do
+    Api.create_interaction_response!(inter, %{type: 5})
+    file = Deutexrium.Meme.generate({inter.channel_id, inter.guild_id}, inter.id)
+    Api.edit_interaction_response!(inter, %{files: [file]})
+    # Deutexrium.Meme.cleanup(file)
   end
 
 

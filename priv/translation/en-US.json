@@ -94,6 +94,10 @@
         "first_time_setup": {
             "title": "first_time_setup",
             "description": "interactive first time setup"
+        },
+        "meme": {
+            "title": "meme",
+            "description": "generate a meme using images and text from this channel"
         }
     },
 

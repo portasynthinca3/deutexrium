@@ -9,7 +9,8 @@ defmodule Deutexrium.App do
   @impl true
   def start(_type, _args) do
     dir = Application.fetch_env!(:deutexrium, :data_path)
-    Logger.info("Data path: #{dir}")
+    File.mkdir_p(dir |> Path.join("data"))
+
     Deutexrium.Sup.start_link([])
   end
 end
