@@ -1,3 +1,10 @@
+{git_hash, _} = System.cmd("git", ["rev-parse", "HEAD"])
+git_hash = String.trim(git_hash) |> String.slice(0..5)
+
+{_, dirty} = System.cmd("git", ["diff-files", "--quiet"])
+dirty = dirty > 0
+git_hash = if dirty do "#{git_hash}-dirty" else git_hash end
+
 defmodule Deutexrium.Command.Stats do
   use Deutexrium.Command.WithDefaultImports
   @moduledoc """
@@ -5,6 +12,7 @@ defmodule Deutexrium.Command.Stats do
   """
 
   @app_version Mix.Project.config[:version]
+  @git_hash git_hash
 
   def spec, do: %{
     name: "stats",
@@ -36,7 +44,7 @@ defmodule Deutexrium.Command.Stats do
         |> Struct.Embed.put_field(translate(locale, "response.stats.guild_servers"), "#{guild_server_cnt}", true)
         |> Struct.Embed.put_field(translate(locale, "response.stats.channel_servers"), "#{chan_server_cnt}", true)
         |> Struct.Embed.put_field(translate(locale, "response.stats.processes"), "#{Process.list |> length()}", true)
-        |> Struct.Embed.put_field(translate(locale, "response.stats.version"), "#{@app_version}", true)
+        |> Struct.Embed.put_field(translate(locale, "response.stats.version"), "#{@app_version} `#{@git_hash}`", true)
 
     Api.edit_interaction_response!(interaction, %{embeds: [embed], flags: 64})
   end
