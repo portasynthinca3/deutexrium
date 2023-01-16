@@ -1,10 +1,8 @@
 defmodule Deutexrium.App do
+  use Application
   @moduledoc """
   Deutexrium OTP app
   """
-
-  use Application
-  require Logger
 
   @impl true
   def start(_type, _args) do

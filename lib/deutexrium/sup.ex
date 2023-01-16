@@ -23,7 +23,8 @@ defmodule Deutexrium.Sup do
       Deutexrium.Presence,
       Deutexrium.Translation,
       Deutexrium.Persistence,
-      Deutexrium,
+      Deutexrium.CommandHolder,
+      Deutexrium.Command,
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -4,13 +4,14 @@ defmodule Ctl do
   """
 
   alias Nostrum.Api
-  alias Deutexrium.Translation
+  alias Deutexrium.{Translation, CommandHolder}
 
   defdelegate migrate(channel_id, limit), to: Deutexrium.Util.Migrate
   defdelegate migrate(channel_id), to: Deutexrium.Util.Migrate
   defdelegate migrate_all(), to: Deutexrium.Util.Migrate
   defdelegate observer, to: :observer_cli, as: :start
   defdelegate reload_langs, to: Translation, as: :reload
+  defdelegate reload_cmds, to: CommandHolder, as: :reload
 
   def unload(resource), do:
     GenServer.cast({:via, Registry, {Registry.Server, resource}}, {:shutdown, false})
