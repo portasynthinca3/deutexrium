@@ -14,6 +14,7 @@ defmodule Deutexrium.Server.Channel do
   alias Server.RqRouter
 
   defmodule State do
+    @moduledoc false
     defstruct [:id, :meta, :model, :timeout, :pre_train]
     @type t :: %__MODULE__{
       id: {channel :: non_neg_integer(), guild :: non_neg_integer()},
@@ -105,8 +106,8 @@ defmodule Deutexrium.Server.Channel do
     {:reply, state.model, state, state.timeout}
 
   def handle_call({:message, msg}, _from, state) do
-    # don't train if ignoring bots
-    unless msg.author.bot || false and get_setting(state, :ignore_bots) do
+    # train unless the message was sent by a bot and the corresponding settings prohibits that
+    if not (msg.author.bot || false) or not get_setting(state, :ignore_bots) do
       # check training settings
       {cid, guild} = state.id
       train = cid == 0 or get_setting(state, :train)
