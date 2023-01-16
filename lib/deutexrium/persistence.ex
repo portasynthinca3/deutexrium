@@ -12,7 +12,7 @@ defmodule Deutexrium.Persistence do
     {:ok, 0}
   end
   def handle_info(:calculate_usage, _) do
-    Logger.info("calculating disk usage")
+    Logger.debug("calculating disk usage")
     Process.send_after(self(), :calculate_usage, 60_000)
     {:noreply, calculate_used_space()}
   end
