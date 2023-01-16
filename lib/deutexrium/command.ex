@@ -11,9 +11,17 @@ defmodule Deutexrium.Command do
   defmacro __using__(_) do
     quote do
       @behaviour Deutexrium.Command
-      alias Nostrum.{Api, Struct}
-      import Deutexrium.Translation, only: [translate: 2, translate: 3]
-      alias Deutexrium.Server
+    end
+  end
+  defmodule WithDefaultImports do
+    @moduledoc "Implements Command with useful default imports"
+    defmacro __using__(_) do
+      quote do
+        @behaviour Deutexrium.Command
+        alias Nostrum.{Api, Struct}
+        alias Deutexrium.Server
+        import Deutexrium.Translation, only: [translate: 2, translate: 3]
+      end
     end
   end
 
@@ -26,14 +34,14 @@ defmodule Deutexrium.Command do
 
   @callback spec() :: cmd_spec()
   @callback handle_command(Interaction.t) :: term()
-  @callback handle_other(Interaction.t) :: term()
+  @callback handle_other({atom(), term(), term()}) :: term()
   @optional_callbacks handle_other: 1
 
   def start_link(), do: Consumer.start_link(__MODULE__)
 
   def handle_event({:READY, _, _}), do: Logger.info("started consumer")
 
-  def handle_event({:INTERACTION_CREATE, %Interaction{data: %{name: command}} = interaction, _}) do
+  def handle_event({:INTERACTION_CREATE, %Interaction{data: %{name: command}} = interaction, _}) when command != nil do
     Logger.debug("received /#{command}")
 
     {module, flags} = CommandHolder.get_module(command)

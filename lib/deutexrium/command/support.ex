@@ -1,5 +1,5 @@
 defmodule Deutexrium.Command.Support do
-  use Deutexrium.Command
+  use Deutexrium.Command.WithDefaultImports
   @moduledoc """
   Sends back contact info and channel+guild ID
   """

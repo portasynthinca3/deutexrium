@@ -8,6 +8,22 @@ defmodule Deutexrium.CommandHolder do
   alias Deutexrium.{Command, Translation}
 
   @command_modules [
+    Command.Donate,
+    Command.FirstTimeSetup,
+    Command.GenByThem,
+    Command.GenGlobal,
+    Command.GenerateFrom,
+    Command.Generate,
+    Command.Help,
+    Command.Impostor,
+    Command.Meme,
+    Command.PreTrain,
+    Command.Privacy,
+    Command.Reset,
+    Command.Scoreboard,
+    Command.Settings,
+    Command.Stats,
+    Command.Status,
     Command.Support
   ]
 
@@ -27,11 +43,6 @@ defmodule Deutexrium.CommandHolder do
       name = source_spec.name
       spec = %{name: name}
 
-      # add name and description localizations
-      spec = Map.put(spec, :name_localizations, Translation.translate_to_all("command.#{name}.title"))
-      spec = Map.put(spec, :description, Translation.translate("en-US", "command.#{name}.description"))
-      spec = Map.put(spec, :description_localizations, Translation.translate_to_all("command.#{name}.description"))
-
       # add option localizations
       spec = if Map.has_key?(source_spec, :options) do
         options = for option <- source_spec.options do
@@ -48,12 +59,25 @@ defmodule Deutexrium.CommandHolder do
       spec = if Map.has_key?(source_spec, :flags) do
         Enum.reduce(source_spec.flags, spec, fn flag, spec ->
           case flag do
-            :admin -> Map.put(spec, :default_member_permissions, "0")
-            :dm -> Map.put(spec, :dm_permission, true)
-            _ -> spec
+            :admin ->
+              Map.put(spec, :default_member_permissions, "0")
+            :dm ->
+              Map.put(spec, :dm_permission, true)
+            {:context_menu, menu} ->
+              type = Map.get(%{user: 2, message: 3}, menu)
+              Map.put(spec, :type, type)
+            _ ->
+              spec
           end
         end)
       else spec end
+
+      # add name and description localizations
+      spec = Map.put(spec, :name_localizations, Translation.translate_to_all("command.#{name}.title"))
+      spec = if Map.get(spec, :type, 1) != 1 do spec else
+        spec = Map.put(spec, :description, Translation.translate("en-US", "command.#{name}.description"))
+        Map.put(spec, :description_localizations, Translation.translate_to_all("command.#{name}.description"))
+      end
 
       flags = Map.get(source_spec, :flags, [])
       spec = Map.delete(spec, :flags)
@@ -62,7 +86,7 @@ defmodule Deutexrium.CommandHolder do
     end)
 
     # register
-    Nostrum.Api.bulk_overwrite_global_application_commands(
+    {:ok, _} = Nostrum.Api.bulk_overwrite_global_application_commands(
       Nostrum.Api.get_current_user!().id,
       commands |> Enum.map(fn {_, spec, _} -> spec end)
     )
@@ -75,7 +99,7 @@ defmodule Deutexrium.CommandHolder do
       :ets.insert(table, {spec.name, module, flags})
     end
 
-    Logger.info("reloaded #{length(commands)} commands")
+    Logger.info("reloaded and registered #{length(commands)} commands")
   end
 
   def handle_call(:reload, _from, table) do
@@ -94,5 +118,5 @@ defmodule Deutexrium.CommandHolder do
     end
   end
 
-  def list_commands, do: :ets.lookup(:translation_keys, :languages)
+  def list_commands, do: :ets.tab2list(:commands)
 end

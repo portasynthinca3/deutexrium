@@ -37,4 +37,4 @@ This internal structure diagram might be helpful:\
   - bring back `/forget`
   - bring back `/export`
   - refactor the settings server (literal unreadable code atm)
-  - refactor the slash command handler (each command should be in a separate module)
+  - set up a Weblate instance for translation
