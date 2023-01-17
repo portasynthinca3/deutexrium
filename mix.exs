@@ -19,7 +19,7 @@ defmodule Deutexrium.MixProject do
   def application do
     [
       mod: {Deutexrium.App, []},
-      extra_applications: [:logger, :os_mon, :gun, :tools, :recon]
+      extra_applications: [:logger, :os_mon, :gun, :tools, :recon, :sasl]
     ]
   end
 
@@ -37,7 +37,8 @@ defmodule Deutexrium.MixProject do
       {:observer_cli, "~> 1.7"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:flow, "~> 1.2"},
-      {:recon, "~> 2.5"}
+      {:recon, "~> 2.5"},
+      {:exla, "~> 0.4.2", override: true}
     ]
   end
 end

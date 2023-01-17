@@ -21,9 +21,16 @@ defmodule Deutexrium.Server.RqRouter do
       :settings -> Server.Settings
     end
 
-    # start it (returns an error if already started, which is okay)
-    GenServer.start(module, id, name: name)
-    name
+    result = DynamicSupervisor.start_child(Deutexrium.ServerSup, %{
+      id: what,
+      start: {GenServer, :start_link, [module, id, [name: name]]}
+    })
+
+    case result do
+      {:ok, pid} -> name
+      {:error, {:already_started, pid}} -> name
+      {:error, err} -> raise ArgumentError, "failed to start server: #{inspect what}"
+    end
   end
 
   @spec route({server_type, integer | {integer, integer}}, any) :: any

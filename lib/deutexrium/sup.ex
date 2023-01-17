@@ -20,6 +20,7 @@ defmodule Deutexrium.Sup do
       # Deutexrium.Influx,
       # Deutexrium.Influx.Logger,
       {Registry, keys: :unique, name: Registry.Server},
+      {DynamicSupervisor, name: Deutexrium.ServerSup},
       Deutexrium.Presence,
       Deutexrium.Translation,
       Deutexrium.Persistence,

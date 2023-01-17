@@ -19,7 +19,7 @@ defmodule Deutexrium.Server.Settings do
     defstruct guild: nil,
               channel: nil,
               context: :guild,
-              timeout: 5 * 60_000,
+              timeout: 10 * 60_000,
               inter: nil,
               fts: nil
   end

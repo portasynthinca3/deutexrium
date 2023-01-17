@@ -29,10 +29,6 @@ On first startup and when updating the bot register slash commands using the she
 ### Exporting data from the master Deuterium instance
 Contact me (`/support`) to get your data package. I'm working on a solution to download the data without human intervention just like Deuterium 1.x has previously allowed.
 
-## Modification
-This internal structure diagram might be helpful:\
-![Internal structure](structure.png)
-
 ## TODO
   - bring back `/forget`
   - bring back `/export`
