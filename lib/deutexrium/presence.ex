@@ -11,7 +11,7 @@ defmodule Deutexrium.Presence do
 
   def handle_info(:update_presence, state) do
     Logger.debug("updating presence")
-    guild_cnt = Nostrum.Cache.GuildCache.all() |> Enum.count()
+    guild_cnt = :ets.info(:nostrum_guilds) |> Keyword.get(:size)
     Nostrum.Api.update_status(:online, "#{guild_cnt} servers", 2)
 
     Process.send_after(self(), :update_presence, 60_000)
