@@ -14,6 +14,7 @@ defmodule Deutexrium.Server.Channel do
   alias Server.RqRouter
 
   defmodule State do
+    @moduledoc false
     defstruct [:id, :meta, :model, :timeout, :pre_train]
     @type t :: %__MODULE__{
       id: {channel :: non_neg_integer(), guild :: non_neg_integer()},
@@ -39,7 +40,6 @@ defmodule Deutexrium.Server.Channel do
   defp generate_message(model, filter, prompt, author_id \\ nil) do
     query = if author_id, do: %{{:author, author_id} => 1000}, else: %{}
 
-    Deutexrium.Influx.LoadCntr.add(:gen)
     result = if prompt, do:
       Markov.Prompt.generate_prompted(model, prompt, query), else:
       Markov.generate_text(model, query)
@@ -105,8 +105,8 @@ defmodule Deutexrium.Server.Channel do
     {:reply, state.model, state, state.timeout}
 
   def handle_call({:message, msg}, _from, state) do
-    # don't train if ignoring bots
-    unless msg.author.bot || false and get_setting(state, :ignore_bots) do
+    # train unless the message was sent by a bot and the corresponding settings prohibits that
+    if not (msg.author.bot || false) or not get_setting(state, :ignore_bots) do
       # check training settings
       {cid, guild} = state.id
       train = cid == 0 or get_setting(state, :train)
@@ -124,7 +124,6 @@ defmodule Deutexrium.Server.Channel do
       state = if train and byte_size(msg.content) > 0 do
         Logger.info("channel-#{cid} server: training local model")
         Markov.Prompt.train(state.model, "#{msg.author.id} #{msg.content}", state.meta.last_message, [{:author, msg.author.id}])
-        Deutexrium.Influx.LoadCntr.add(:train)
         %{state | meta: %{state.meta | total_msgs: state.meta.total_msgs + 1}}
       else state end
 
@@ -226,12 +225,10 @@ defmodule Deutexrium.Server.Channel do
 
             [a, nil] ->
               Markov.train(state.model, "#{a.author.id} #{a.content}", [{:author, a.author.id}])
-              Deutexrium.Influx.LoadCntr.add(:train)
               a
 
             [a, b] ->
               Markov.Prompt.train(state.model, "#{a.author.id} #{a.content}", "#{b.author.id} #{b.content}", [{:author, a.author.id}])
-              Deutexrium.Influx.LoadCntr.add(:train)
               a
           end
         end

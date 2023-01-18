@@ -7,7 +7,8 @@ defmodule Deutexrium.Server.Settings do
   alias Nostrum.Api
   import Deutexrium.Translation, only: [translate: 2, translate: 3]
 
-  defmodule FTS do # First Time Setup
+  defmodule FTS do
+    @moduledoc "First Time Setup state"
     defstruct step_history: [0],
               changes: [],
               step_data: nil
@@ -18,7 +19,7 @@ defmodule Deutexrium.Server.Settings do
     defstruct guild: nil,
               channel: nil,
               context: :guild,
-              timeout: 5 * 60_000,
+              timeout: 10 * 60_000,
               inter: nil,
               fts: nil
   end
@@ -196,7 +197,7 @@ defmodule Deutexrium.Server.Settings do
         ], false}
 
       :accept ->
-        changes = fts.changes |> IO.inspect |> Enum.map_join("\n", fn {key, val} ->
+        changes = fts.changes |> Enum.map_join("\n", fn {key, val} ->
           {_, spec} = Enum.find(@fts_steps, fn {_, spec} -> Map.has_key?(spec, :put_in) and spec.put_in == key end)
           {k, v} = case {spec.type, val} do
             {:channel_sel, t} when t == :all or t == :none -> {
@@ -427,19 +428,19 @@ defmodule Deutexrium.Server.Settings do
         case {spec.type, val} do
           {:channel_sel, x} when x == :all or x == :none ->
             Deutexrium.Server.Guild.set(guild, key, x == :all)
-            all_channels |> Enum.map(fn id -> Deutexrium.Server.Channel.set({id, guild}, key, nil) end)
+            for id <- all_channels, do: Deutexrium.Server.Channel.set({id, guild}, key, nil)
 
           {:channel_sel, {x, overrides}} when x == :some or x == :all_except ->
             Deutexrium.Server.Guild.set(guild, key, x == :all_except)
-            overrides |> Enum.map(fn id -> Deutexrium.Server.Channel.set({id, guild}, key, x == :some) end)
+            for id <- overrides, do: Deutexrium.Server.Channel.set({id, guild}, key, x == :some)
 
           {:guild_nb_setting, _} ->
             Deutexrium.Server.Guild.set(guild, key, val)
-            all_channels |> Enum.map(fn id -> Deutexrium.Server.Channel.set({id, guild}, key, nil) end)
+            for id <- all_channels, do: Deutexrium.Server.Channel.set({id, guild}, key, nil)
         end
         []
       else
-        all_channels |> Enum.map(fn id -> Deutexrium.Server.Channel.set({id, guild}, :webhook_data, nil) end)
+        for id <- all_channels, do: Deutexrium.Server.Channel.set({id, guild}, :webhook_data, nil)
         case val do
           :none -> []
           {:some, overrides} -> overrides

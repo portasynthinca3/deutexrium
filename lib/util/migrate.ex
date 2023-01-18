@@ -4,7 +4,7 @@ defmodule Deutexrium.Util.Migrate do
   require Logger
   alias Deutexrium.Persistence
 
-  def migrate(channel_id, limit \\ 100000) do
+  def migrate(channel_id, limit \\ 100_000) do
     Logger.info("migrate-#{channel_id}: starting")
     data_path = Application.fetch_env!(:deutexrium, :data_path)
 

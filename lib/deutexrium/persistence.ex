@@ -1,23 +1,26 @@
 defmodule Deutexrium.Persistence do
+  use GenServer
   @moduledoc """
   Storage umbrella functions
   """
 
-  use GenServer
   require Logger
 
   def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
   def init(_) do
+    interval = Application.get_env(:deutexrium, :usage_recalc_interval)
     Process.send_after(self(), :calculate_usage, 0)
-    {:ok, 0}
+    {:ok, {0, interval}}
   end
-  def handle_info(:calculate_usage, _) do
-    Logger.info("calculating disk usage")
+  def handle_info(:calculate_usage, interval) do
+    Logger.debug("calculating disk usage")
     Process.send_after(self(), :calculate_usage, 60_000)
-    {:noreply, calculate_used_space()}
+    size = calculate_used_space()
+    Deutexrium.Prometheus.data_size(size)
+    {:noreply, {size, interval}}
   end
-  def handle_call(:storage_size, _from, state) do
-    {:reply, state, state}
+  def handle_call(:storage_size, _from, {size, _} = state) do
+    {:reply, size, state}
   end
 
   def calculate_used_space(path \\ Application.fetch_env!(:deutexrium, :data_path)) do

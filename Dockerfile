@@ -34,6 +34,7 @@ ENV RELEASE_VM_ARGS=vm.args
 
 EXPOSE 4369
 EXPOSE 25565
+EXPOSE 4040
 VOLUME ["/var/deutexrium"]
 ENTRYPOINT ["/opt/app/deutexrium/bin/deutexrium"]
 CMD ["start"]

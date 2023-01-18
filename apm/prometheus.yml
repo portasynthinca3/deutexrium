@@ -1,0 +1,5 @@
+scrape_configs:
+  - job_name: 'deutexrium'
+    scheme: 'http'
+    static_configs:
+      - targets: ['localhost:4040']

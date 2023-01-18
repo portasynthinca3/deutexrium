@@ -23,10 +23,11 @@ defmodule Deutexrium.Translation do
 
   def init(_args) do
     table = :ets.new(:translation_keys, [:named_table, :public, :set])
-    {:ok, table, {:continue, :reload}}
+    reload_langs(table)
+    {:ok, table}
   end
 
-  def handle_continue(:reload, table) do
+  defp reload_langs(table) do
     :ets.delete_all_objects(table)
     tr_root = Path.join(:code.priv_dir(:deutexrium), "translation")
 
@@ -39,12 +40,13 @@ defmodule Deutexrium.Translation do
     end
 
     :ets.insert(table, {:languages, langs})
-
     Logger.info("reloaded #{length(langs)} locales")
-    {:noreply, table}
   end
 
-  def handle_call(:reload, _from, table), do: {:reply, :ok, table, {:continue, :reload}}
+  def handle_call(:reload, _from, table) do
+    reload_langs(table)
+    {:reply, :ok, table}
+  end
 
   # PUBLIC INTERFACE
 
