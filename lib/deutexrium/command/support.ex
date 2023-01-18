@@ -17,6 +17,6 @@ defmodule Deutexrium.Command.Support do
       |> Struct.Embed.put_field(translate(locale, "response.support.email"), "`portasynthinca3 (at) gmail.com`")
       |> Struct.Embed.put_field(translate(locale, "response.support.debug"), "`#{interaction.guild_id}, #{interaction.channel_id}`")
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

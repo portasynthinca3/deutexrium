@@ -22,6 +22,6 @@ defmodule Deutexrium.Command.Status do
         |> Struct.Embed.put_field(translate(locale, "response.status.global"), chan_meta.global_trained_on)
         |> Struct.Embed.put_field(translate(locale, "response.status.global_total"), global_meta.total_msgs)
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

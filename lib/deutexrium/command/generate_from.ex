@@ -18,12 +18,12 @@ defmodule Deutexrium.Command.GenerateFrom do
     ]
   }
 
-  def handle_command(%Struct.Interaction{locale: locale} = interaction) do
-    text = case Server.Channel.generate({interaction.channel_id, interaction.guild_id}) do
+  def handle_command(%Struct.Interaction{locale: locale, data: %{options: [%{name: "channel", value: target}]}} = interaction) do
+    text = case Server.Channel.generate({target, interaction.guild_id}) do
       :error -> translate(locale, "response.generate.gen_failed")
       {text, _} -> text
     end
 
-    Api.edit_interaction_response!(interaction, %{content: text})
+    %{content: text}
   end
 end

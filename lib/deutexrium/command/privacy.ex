@@ -26,6 +26,6 @@ defmodule Deutexrium.Command.Privacy do
           translate(locale, "response.privacy.#{section}.paragraph"))
       end)
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

@@ -20,6 +20,6 @@ defmodule Deutexrium.Command.Reset do
       "settings" -> Server.Channel.reset({interaction.channel_id, interaction.guild_id}, :settings)
       "model" -> Server.Channel.reset({interaction.channel_id, interaction.guild_id}, :model)
     end
-    Api.edit_interaction_response!(interaction, %{content: translate(locale, "response.reset.#{target}")})
+    %{content: translate(locale, "response.reset.#{target}")}
   end
 end

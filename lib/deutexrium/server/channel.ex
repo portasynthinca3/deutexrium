@@ -40,7 +40,6 @@ defmodule Deutexrium.Server.Channel do
   defp generate_message(model, filter, prompt, author_id \\ nil) do
     query = if author_id, do: %{{:author, author_id} => 1000}, else: %{}
 
-    Deutexrium.Influx.LoadCntr.add(:gen)
     result = if prompt, do:
       Markov.Prompt.generate_prompted(model, prompt, query), else:
       Markov.generate_text(model, query)
@@ -125,7 +124,6 @@ defmodule Deutexrium.Server.Channel do
       state = if train and byte_size(msg.content) > 0 do
         Logger.info("channel-#{cid} server: training local model")
         Markov.Prompt.train(state.model, "#{msg.author.id} #{msg.content}", state.meta.last_message, [{:author, msg.author.id}])
-        Deutexrium.Influx.LoadCntr.add(:train)
         %{state | meta: %{state.meta | total_msgs: state.meta.total_msgs + 1}}
       else state end
 
@@ -227,12 +225,10 @@ defmodule Deutexrium.Server.Channel do
 
             [a, nil] ->
               Markov.train(state.model, "#{a.author.id} #{a.content}", [{:author, a.author.id}])
-              Deutexrium.Influx.LoadCntr.add(:train)
               a
 
             [a, b] ->
               Markov.Prompt.train(state.model, "#{a.author.id} #{a.content}", "#{b.author.id} #{b.content}", [{:author, a.author.id}])
-              Deutexrium.Influx.LoadCntr.add(:train)
               a
           end
         end

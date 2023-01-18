@@ -17,12 +17,14 @@ defmodule Deutexrium.Command.GenByThem do
     case Server.Channel.generate(id, interaction.data.target_id) do
       {_text, _author} = data ->
         webhook = Server.Channel.get(id, :webhook_data)
-        Api.delete_interaction_response!(interaction)
-        Deutexrium.Util.Webhook.try_sending_webhook(data, interaction.channel_id, webhook, interaction.guild_id)
+        {:delete_and_finish, {data, interaction.channel_id, webhook, interaction.guild_id}}
 
       :error ->
-        Api.edit_interaction_response!(interaction, %{content:
-          translate(locale, "response.gen_by_them.no_data", ["<@#{interaction.data.target_id}>"])})
+        %{content: translate(locale, "response.gen_by_them.no_data", ["<@#{interaction.data.target_id}>"])}
     end
+  end
+
+  def finish_handling({data, channel_id, webhook, guild_id}) do
+    Deutexrium.Util.Webhook.try_sending_webhook(data, channel_id, webhook, guild_id)
   end
 end

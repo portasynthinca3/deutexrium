@@ -16,6 +16,6 @@ defmodule Deutexrium.Command.GenGlobal do
       :error -> translate(locale, "response.generate.gen_failed")
       {text, _} -> text
     end
-    Api.edit_interaction_response!(interaction, %{content: text})
+    %{content: text}
   end
 end

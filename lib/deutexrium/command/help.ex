@@ -31,6 +31,6 @@ defmodule Deutexrium.Command.Help do
       Struct.Embed.put_field(embed, translate(locale, "command.#{name}.title"), translate(locale, "response.help.#{name}"), true)
     end)
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

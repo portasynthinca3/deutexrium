@@ -19,6 +19,6 @@ defmodule Deutexrium.Command.Donate do
       |> Struct.Embed.put_field(translate(locale, "response.donate.paypal"), "https://paypal.me/portasynthinca3")
       |> Struct.Embed.put_field(translate(locale, "response.donate.dbl"), "https://top.gg/bot/733605243396554813/vote")
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

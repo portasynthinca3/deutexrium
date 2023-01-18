@@ -21,6 +21,6 @@ defmodule Deutexrium.Command.Scoreboard do
       {idx + 1, acc |> Struct.Embed.put_field("##{idx}", translate(locale, "response.scoreboard.row", ["<@#{k}>", "#{v}"]))}
     end)
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed]})
+    %{embeds: [embed]}
   end
 end

@@ -41,7 +41,7 @@ defmodule Deutexrium.Command.Generate do
       translate(locale, "response.generate.val_too_big")
     end
 
-    Api.edit_interaction_response!(interaction, %{content: content})
+    %{content: content}
   end
 
   def handle_other({:MESSAGE_CREATE, %Struct.Message{} = msg, _}) do

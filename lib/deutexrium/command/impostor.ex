@@ -31,6 +31,6 @@ defmodule Deutexrium.Command.Impostor do
         translate(locale, "response.impostor.unknown_error")
     end
 
-    Api.edit_interaction_response!(interaction, %{content: response})
+    %{content: response}
   end
 end

@@ -50,7 +50,24 @@ defmodule Deutexrium.Command do
       Api.create_interaction_response!(interaction, %{type: 5, data: %{flags: flags}})
     end
 
-    module.handle_command(interaction)
+    {us, result} = :timer.tc(fn -> module.handle_command(interaction) end)
+    Deutexrium.Prometheus.command_handled(command, us)
+
+    case result do
+      :ok ->
+        :ok
+
+      data when is_map(data) ->
+        Api.edit_interaction_response!(interaction, data)
+
+      {:finish, data, finish} ->
+        Api.edit_interaction_response!(interaction, data)
+        module.finish_handling(finish)
+
+      {:delete_and_finish, finish} ->
+        Api.delete_interaction_response!(interaction)
+        module.finish_handling(finish)
+    end
   end
 
   def handle_event(event) do

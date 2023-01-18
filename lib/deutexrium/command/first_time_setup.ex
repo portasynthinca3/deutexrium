@@ -11,6 +11,6 @@ defmodule Deutexrium.Command.FirstTimeSetup do
 
   def handle_command(%Struct.Interaction{} = interaction) do
     {content, components} = Server.Settings.initialize(interaction)
-    Api.edit_interaction_response!(interaction, %{content: content, components: components})
+    %{content: content, components: components}
   end
 end

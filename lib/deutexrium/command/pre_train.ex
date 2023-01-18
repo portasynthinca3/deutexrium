@@ -26,8 +26,9 @@ defmodule Deutexrium.Command.PreTrain do
 
     if count <= 10_000 do
       Server.Channel.start_pre_train({interaction.channel_id, interaction.guild_id}, interaction, count, locale)
+      :ok
     else
-      Api.edit_interaction_response!(interaction, %{content: translate(locale, "response.pre_train.error.too_much")})
+      %{content: translate(locale, "response.pre_train.error.too_much")}
     end
   end
 end

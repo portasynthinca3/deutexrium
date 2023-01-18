@@ -11,7 +11,10 @@ defmodule Deutexrium.Command.Meme do
 
   def handle_command(%Struct.Interaction{} = interaction) do
     file = Deutexrium.Meme.generate({interaction.channel_id, interaction.guild_id}, interaction.id)
-    Api.edit_interaction_response!(interaction, %{files: [file]})
+    {:finish, %{files: [file]}, file}
+  end
+
+  def finish_handling(file) do
     Deutexrium.Meme.cleanup(file)
   end
 end

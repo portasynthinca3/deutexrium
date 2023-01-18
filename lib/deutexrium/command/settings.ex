@@ -11,7 +11,7 @@ defmodule Deutexrium.Command.Settings do
 
   def handle_command(%Struct.Interaction{} = interaction) do
     {content, components} = Server.Settings.initialize(interaction)
-    Api.edit_interaction_response!(interaction, %{content: content, components: components})
+    %{content: content, components: components}
   end
 
   def handle_other({:INTERACTION_CREATE, %Struct.Interaction{data: %{custom_id: "settings_target", values: [value]}} = inter, _}) do

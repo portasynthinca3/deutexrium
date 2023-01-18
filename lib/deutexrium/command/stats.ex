@@ -46,6 +46,6 @@ defmodule Deutexrium.Command.Stats do
         |> Struct.Embed.put_field(translate(locale, "response.stats.processes"), "#{Process.list |> length()}", true)
         |> Struct.Embed.put_field(translate(locale, "response.stats.version"), "#{@app_version} `#{@git_hash}`", true)
 
-    Api.edit_interaction_response!(interaction, %{embeds: [embed], flags: 64})
+    %{embeds: [embed], flags: 64}
   end
 end

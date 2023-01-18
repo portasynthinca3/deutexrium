@@ -26,6 +26,9 @@ On first startup and when updating the bot register slash commands using the she
   * `Ctl.add_slash_commands` to register them globally (takes about an hour to update across all servers)
   * `Ctl.add_slash_commands(123)` to register them in the Discord server with ID 123 (instant)
 
+## Performance monitoring
+Deuterium uses Prometheus for performance logging, an example config for which can be found in `apm/`. A dashboard for Grafana can be found in the same directory.
+
 ### Exporting data from the master Deuterium instance
 Contact me (`/support`) to get your data package. I'm working on a solution to download the data without human intervention just like Deuterium 1.x has previously allowed.
 
@@ -34,3 +37,5 @@ Contact me (`/support`) to get your data package. I'm working on a solution to d
   - bring back `/export`
   - refactor the settings server (literal unreadable code atm)
   - set up a Weblate instance for translation
+  - bring back voice channel support
+  - bring back stat logging
