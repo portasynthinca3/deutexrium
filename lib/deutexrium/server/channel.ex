@@ -71,13 +71,17 @@ defmodule Deutexrium.Server.Channel do
     # load meta and model
     Logger.info("channel-#{id} server: loading")
 
-    {:ok, model} = Markov.load(Persistence.root_for(id), [
+    path = Persistence.root_for(id)
+    model = case Markov.load(Persistence.root_for(id), [
       # default model options
       sanitize_tokens: true,
       order: 3,
       shift_probabilities: true,
       store_log: [:train, :gen, :start, :end]
-    ])
+    ]) do
+      {:ok, model} -> model
+      {:error, {:already_started, pid}} -> {:via, Registry, {Markov.ModelServers, path}}
+    end
 
     meta = try do
       Meta.load!(id)

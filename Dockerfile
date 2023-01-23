@@ -6,6 +6,7 @@ COPY lib lib
 COPY priv priv
 COPY mix.exs mix.exs
 COPY mix.lock mix.lock
+COPY .git .git
 
 RUN apk add build-base libexecinfo-dev
 RUN export MIX_ENV=prod && \
