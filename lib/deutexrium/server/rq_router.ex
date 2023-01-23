@@ -29,7 +29,7 @@ defmodule Deutexrium.Server.RqRouter do
     case result do
       {:ok, pid} -> name
       {:error, {:already_started, pid}} -> name
-      {:error, err} -> raise ArgumentError, "failed to start server: #{inspect what}"
+      {:error, err} -> raise ArgumentError, "failed to start server: #{inspect what}: #{inspect err}"
     end
   end
 
