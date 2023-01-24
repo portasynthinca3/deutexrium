@@ -23,7 +23,8 @@ defmodule Deutexrium.Server.RqRouter do
 
     result = DynamicSupervisor.start_child(Deutexrium.ServerSup, %{
       id: what,
-      start: {GenServer, :start_link, [module, id, [name: name]]}
+      start: {GenServer, :start_link, [module, id, [name: name]]},
+      restart: :transient
     })
 
     case result do
