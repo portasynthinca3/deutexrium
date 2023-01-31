@@ -2,8 +2,7 @@
 git_hash = String.trim(git_hash) |> String.slice(0..5)
 
 {_, dirty} = System.cmd("git", ["diff-files", "--quiet"])
-dirty = dirty > 0
-git_hash = if dirty do "#{git_hash}-dirty" else git_hash end
+git_hash = if dirty > 0 do "#{git_hash}-dirty" else git_hash end
 
 defmodule Deutexrium.Command.Stats do
   use Deutexrium.Command.WithDefaultImports
