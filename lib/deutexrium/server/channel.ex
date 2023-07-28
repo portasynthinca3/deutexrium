@@ -343,9 +343,9 @@ defmodule Deutexrium.Server.Channel do
   @spec get(server_id(), atom()) :: any()
   def get(id, setting) when is_tuple(id) and is_atom(setting), do: id |> RqRouter.route_to_chan({:get, setting})
 
-  @spec get_file(server_id(), Regex.t) :: String.t
-  def get_file({id, _}, path_pattern \\ ~r/.*/) do
-    uri_list = File.read!(Persistence.root_for(id) |> Path.join("media.list"))
+  @spec get_files(server_id(), Regex.t) :: String.t
+  def get_files({id, _}, path_pattern \\ ~r/.*/) do
+    File.read!(Persistence.root_for(id) |> Path.join("media.list"))
       |> String.split("\n")
       |> Enum.filter(fn x ->
         uri = URI.new(x)
@@ -358,8 +358,5 @@ defmodule Deutexrium.Server.Channel do
           _ -> false
         end
       end)
-
-    n = :rand.uniform(length(uri_list)) - 1
-    uri_list |> Enum.at(n)
   end
 end
