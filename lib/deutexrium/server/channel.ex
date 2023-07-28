@@ -348,7 +348,15 @@ defmodule Deutexrium.Server.Channel do
     uri_list = File.read!(Persistence.root_for(id) |> Path.join("media.list"))
       |> String.split("\n")
       |> Enum.filter(fn x ->
-        x != "" and String.match?(URI.new!(x).path || "", path_pattern)
+        uri = URI.new(x)
+        case uri do
+          {:ok, uri} -> if uri.path != nil do
+            String.match?(uri.path, path_pattern)
+          else
+            false
+          end
+          _ -> false
+        end
       end)
 
     n = :rand.uniform(length(uri_list)) - 1

@@ -8,7 +8,7 @@ COPY mix.exs mix.exs
 COPY mix.lock mix.lock
 COPY .git .git
 
-RUN apk add build-base libexecinfo-dev
+RUN apk add build-base libexecinfo-dev git
 RUN export MIX_ENV=prod && \
     rm -rf _build && \
     mix deps.get && \
