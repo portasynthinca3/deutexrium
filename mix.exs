@@ -4,7 +4,7 @@ defmodule Deutexrium.MixProject do
   def project do
     [
       app: :deutexrium,
-      version: "2.5.0",
+      version: "2.6.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -47,7 +47,8 @@ defmodule Deutexrium.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:flow, "~> 1.2"},
       {:recon, "~> 2.5"},
-      {:exla, "~> 0.4.2", override: true}
+      {:exla, "~> 0.4.2", override: true},
+      {:floki, "~> 0.34.0"}
     ]
   end
 end

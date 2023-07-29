@@ -4,6 +4,7 @@ defmodule Deutexrium.Meme do
   alias Deutexrium.Server.Channel
 
   @templates [
+    :gif_caption,
     %{
       template: "demotivator.png",
       images: [
@@ -96,15 +97,91 @@ defmodule Deutexrium.Meme do
     }
   ]
 
+  def extract_gif(url, path) do
+    # download
+    {_, 0} = System.cmd("wget", ["-O", path, "--", url],
+      env: [{"DEUTEX_TOKEN", ""}], stderr_to_stdout: true)
+
+    case File.read!(path) do
+      <<"GIF87a", _ :: binary>> -> :ok
+      <<"GIF89a", _ :: binary>> -> :ok
+      html ->
+        document = Floki.parse_document!(html)
+        # extract actual gif url
+        [{"meta", [_, _, {"content", url}], []}] =
+          Floki.find(document, "meta[property=\"og:image\"]")
+        extract_gif(url, path)
+    end
+  end
+
   @spec generate({integer(), integer()}, integer()) :: Path.t
   def generate(channel, unique_id) do
     # choose template
     template_n = :rand.uniform(length(@templates)) - 1
-    template_spec = @templates |> Enum.at(template_n)
 
     # prepare temporary path
     root = System.tmp_dir! |> Path.join("#{unique_id}")
     File.mkdir(root)
+
+    generate_from_template(channel, root, @templates |> Enum.at(template_n))
+  end
+
+  def generate_from_template(channel, root, :gif_caption) do
+    meme_path = root |> Path.join("output.gif")
+
+    # get gifs
+    uri_list = Channel.get_files(channel)
+      |> Enum.filter(fn uri -> String.match?(uri.path, ~r/gif/) or uri.host == "tenor.com" end)
+      |> Enum.map(fn uri ->
+        str = URI.to_string(uri)
+        if String.ends_with?(str, ".gif") do str else str <> ".gif" end
+      end)
+
+    # select random gif
+    n = :rand.uniform(length(uri_list)) - 1
+    uri = uri_list |> Enum.at(n)
+
+    # download gif
+    dl_target = Path.join(root, "output.gif")
+    extract_gif(uri, dl_target)
+
+    # query size
+    {sizes, 0} = System.cmd("magick", [
+      "identify",
+      "-format", "%[fx:w]x%[fx:h].",
+      dl_target], env: [{"DEUTEX_TOKEN", ""}])
+    [w, h] = String.split(sizes, ".") |> Enum.at(0) |> String.split("x")
+    {h, _} = Integer.parse(h)
+    h = floor(h / 4)
+
+    # generate text
+    text_path = Path.join(root, "text.png")
+    {text, _} = Channel.generate(channel)
+    {_, 0} = System.cmd("magick", [
+      "-background", "transparent",
+      "-fill", "white",
+      "-stroke", "black",
+      "-strokewidth", "2",
+      "-font", "Noto-Sans-Bold",
+      "-size", "#{w}x#{h}^",
+      "-gravity", "center",
+      "caption:#{text}",
+      text_path], env: [{"DEUTEX_TOKEN", ""}], stderr_to_stdout: true)
+
+    # overlay text
+    {_, 0} = System.cmd("magick", [
+      "convert", dl_target,
+      "-coalesce",
+      "null:", text_path,
+      "-gravity", "north",
+      "-layers", "composite",
+      "-layers", "optimize",
+      meme_path], env: [{"DEUTEX_TOKEN", ""}], stderr_to_stdout: true)
+
+    meme_path
+  end
+
+  def generate_from_template(channel, root, template_spec) do
     template_path = :code.priv_dir(:deutexrium)
       |> Path.join("meme_templates")
       |> Path.join(template_spec.template)
@@ -118,7 +195,7 @@ defmodule Deutexrium.Meme do
       n = :rand.uniform(length(uri_list)) - 1
       uri = uri_list |> Enum.at(n)
       dl_target = Path.join(root, "overlay")
-      {_, 0} = System.cmd("wget", ["-O", dl_target, "--", uri],
+      {_, 0} = System.cmd("wget", ["-O", dl_target, "--", uri |> URI.to_string],
         env: [{"DEUTEX_TOKEN", ""}], stderr_to_stdout: true) # i'm sure wget isn't malicious but..
 
       # overlay image

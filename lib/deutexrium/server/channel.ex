@@ -120,9 +120,11 @@ defmodule Deutexrium.Server.Channel do
       attachments = (msg.attachments |> Enum.map(fn x -> x.url end))
         ++ (Regex.scan(@url_regex, msg.content) |> Enum.map(fn [str|_] -> str end))
 
-      File.open!(Persistence.root_for(cid) |> Path.join("media.list"), [:utf8, :append], fn file ->
-        IO.write(file, ["\n" | attachments |> Enum.join("\n")])
-      end)
+      if length(attachments) > 0 do
+        File.open!(Persistence.root_for(cid) |> Path.join("media.list"), [:utf8, :append], fn file ->
+          IO.write(file, ["\n", attachments |> Enum.join("\n")])
+        end)
+      end
 
       # train local model
       state = if train and byte_size(msg.content) > 0 do
@@ -347,9 +349,9 @@ defmodule Deutexrium.Server.Channel do
   def get_files({id, _}, path_pattern \\ ~r/.*/) do
     File.read!(Persistence.root_for(id) |> Path.join("media.list"))
       |> String.split("\n")
+      |> Enum.map(&URI.new/1)
       |> Enum.filter(fn x ->
-        uri = URI.new(x)
-        case uri do
+        case x do
           {:ok, uri} -> if uri.path != nil do
             String.match?(uri.path, path_pattern)
           else
@@ -358,5 +360,6 @@ defmodule Deutexrium.Server.Channel do
           _ -> false
         end
       end)
+      |> Enum.map(fn {:ok, uri} -> uri end)
   end
 end
