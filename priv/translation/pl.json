@@ -86,16 +86,16 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **generowanie wiadomości nie powiodło się**",
-            "val_too_big": ":x: **zbyt wysoka wartość**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **zbyt wysoka wartość**\n[Więcej informacji](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **odpowiedź zostawie wkrótce wysłana**",
-            "no_impostor": ":question: **odpowiedź zostanie wkrótce wysłana jako zwykła wiadomość. Spróbuj [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **odpowiedź zostanie wkrótce wysłana jako zwykła wiadomość. Spróbuj [/impostor](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: Nie słyszałem nic od $1"
         },
         "help": {
             "header": "Polecenia Deuteru",
-            "sub": "Bardziej obszerne informacje znajdują się na https://deut.portasynthinca3.me/",
+            "sub": "Bardziej obszerne informacje znajdują się na https://deut.psi3.ru/",
             "regular": "ZWYKŁE POLECENIA",
             "regular_sub": "mogą zostać wywołane przez każdego",
             "help": ":information_source: wyślij tę wiadomość",
@@ -193,10 +193,10 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **impersonacja została aktywowana**",
-            "webhook_error": ":x: **bot nie posiada uprawnień \"Manage Webhooks\"**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **bot nie posiada uprawnień \"Manage Webhooks\"**\n[Więcej informacji](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **nieznany błąd**"
         },
-        "missing_admin": ":x: **brak uprawnień \"administratora\"**\n[Więcej informacji](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+        "missing_admin": ":x: **brak uprawnień \"administratora\"**\n[Więcej informacji](https://deut.psi3.ru/admin-cmd/admin-commands-notice)"
     },
 
     "setting": {

@@ -86,16 +86,16 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **generazione fallita**",
-            "val_too_big": ":x: **valore troppo grande**\n[Ulteriori informazioni](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **valore troppo grande**\n[Ulteriori informazioni](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **la risposta sarà inviata a breve**",
-            "no_impostor": ":question: **la risposta sarà inviata come messaggio normale a breve. Prova [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **la risposta sarà inviata come messaggio normale a breve. Prova [/impostor](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: Non ho sentito nulla da $1"
         },
         "help": {
             "header": "I comandi del Deuterio",
-            "sub": "Ulteriore aiuto su https://deut.portasynthinca3.me/",
+            "sub": "Ulteriore aiuto su https://deut.psi3.ru/",
             "regular": "COMANDI REGOLARI",
             "regular_sub": "possono essere eseguiti da chiunque",
             "help": ":information_source: invia questo messaggio",
@@ -193,10 +193,10 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **impersonation activated**",
-            "webhook_error": ":x: **manca il privilegio \"Manage Webhooks\"**\n[Ulteriori informazioni](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **manca il privilegio \"Manage Webhooks\"**\n[Ulteriori informazioni](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **errore sconosciuto**"
         },
-        "missing_admin": ":x: **manca il privilegio \"administrator\"**\n[Ulteriori informazioni](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+        "missing_admin": ":x: **manca il privilegio \"administrator\"**\n[Ulteriori informazioni](https://deut.psi3.ru/admin-cmd/admin-commands-notice)"
     },
 
     "setting": {

@@ -16,7 +16,7 @@ defmodule Deutexrium.Command.Status do
     embed = %Struct.Embed{}
         |> Struct.Embed.put_title(translate(locale, "response.status.title"))
         |> Struct.Embed.put_color(0xe6f916)
-        |> Struct.Embed.put_url("https://deut.portasynthinca3.me/commands/status")
+        |> Struct.Embed.put_url("https://deut.psi3.ru/commands/status")
 
         |> Struct.Embed.put_field(translate(locale, "response.status.this_chan"), chan_meta.total_msgs)
         |> Struct.Embed.put_field(translate(locale, "response.status.global"), chan_meta.global_trained_on)

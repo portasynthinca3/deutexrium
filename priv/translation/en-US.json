@@ -104,7 +104,7 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **generation failed**",
-            "val_too_big": ":x: **value too big**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **value too big**\n[More info](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "pre_train": {
             "error": {
@@ -119,12 +119,12 @@
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **the response will be sent shortly**",
-            "no_impostor": ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **the response will be sent as a normal message shortly. Try [/impostor](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: I haven't heard anything from $1"
         },
         "help": {
             "header": "Deuterium commands",
-            "sub": "More extensive help information at https://deut.portasynthinca3.me/",
+            "sub": "More extensive help information at https://deut.psi3.ru/",
             "regular": "REGULAR COMMANDS",
             "regular_sub": "can be run by anybody",
             "help": ":information_source: send this message",
@@ -228,7 +228,7 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **impersonation activated**",
-            "webhook_error": ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **bot is missing \"Manage Webhooks\" permission**\n[More info](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **unknown error**"
         }
     },

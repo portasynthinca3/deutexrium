@@ -31,7 +31,7 @@ defmodule Deutexrium.Command.Stats do
     embed = %Struct.Embed{}
         |> Struct.Embed.put_title(translate(locale, "response.stats.title"))
         |> Struct.Embed.put_color(0xe6f916)
-        |> Struct.Embed.put_url("https://deut.portasynthinca3.me/commands/stats")
+        |> Struct.Embed.put_url("https://deut.psi3.ru/commands/stats")
 
         |> Struct.Embed.put_field(translate(locale, "response.stats.data_size.title"),
           translate(locale, "response.stats.data_size.value", ["#{used_space}", "#{used_space |> div(1024)}"]), true)

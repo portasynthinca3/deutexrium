@@ -13,7 +13,7 @@ defmodule Deutexrium.Command.Privacy do
     embed = %Struct.Embed{}
       |> Struct.Embed.put_title(translate(locale, "response.privacy.title"))
       |> Struct.Embed.put_color(0xe6f916)
-      |> Struct.Embed.put_url("https://deut.portasynthinca3.me/privacy-policy")
+      |> Struct.Embed.put_url("https://deut.psi3.ru/privacy-policy")
 
       embed = Enum.reduce([
         "scope", "auth",

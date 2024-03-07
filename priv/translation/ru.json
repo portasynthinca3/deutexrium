@@ -100,7 +100,7 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **генерация не удалась**",
-            "val_too_big": ":x: **значение слишком большое**\n[Больше информации](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **значение слишком большое**\n[Больше информации](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "pre_train": {
             "error": {
@@ -115,12 +115,12 @@
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **ответ будет скоро отправлен**",
-            "no_impostor": ":question: **Ответ будет отправлен как обычное сообщение. Попробуйте [/импостер](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **Ответ будет отправлен как обычное сообщение. Попробуйте [/импостер](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: I haven't heard anything from $1"
         },
         "help": {
             "header": "Команды Дейтерия",
-            "sub": "Больше информации здесь: https://deut.portasynthinca3.me/",
+            "sub": "Больше информации здесь: https://deut.psi3.ru/",
             "regular": "ОБЫЧНЫЕ КОМАНДЫ",
             "regular_sub": "могут быть активированы кем угодно",
             "help": ":information_source: отправить это сообщение",
@@ -221,7 +221,7 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **режим перевоплощения включен**",
-            "webhook_error": ":x: **у бота нет разрешения управлять вебхуками**\n[Больше информации](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **у бота нет разрешения управлять вебхуками**\n[Больше информации](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **неизвестная ошибка**"
         }
     },

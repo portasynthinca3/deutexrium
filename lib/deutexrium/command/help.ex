@@ -14,7 +14,7 @@ defmodule Deutexrium.Command.Help do
       |> Struct.Embed.put_title(translate(locale, "response.help.header"))
       |> Struct.Embed.put_color(0xe6f916)
       |> Struct.Embed.put_description(translate(locale, "response.help.sub"))
-      |> Struct.Embed.put_url("https://deut.portasynthinca3.me/")
+      |> Struct.Embed.put_url("https://deut.psi3.ru/")
       |> Struct.Embed.put_field(translate(locale, "response.help.regular"), translate(locale, "response.help.regular_sub"))
 
     commands = Deutexrium.CommandHolder.list_commands()

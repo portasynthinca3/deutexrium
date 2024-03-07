@@ -86,16 +86,16 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **Fallo de generación**",
-            "val_too_big": ":x: **Valor demasiado grande**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **Valor demasiado grande**\n[Más información](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **La respuesta llegará pronto**",
-            "no_impostor": ":question: **La respuesta será enviada como un mensaje normal en breve. Prueba [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **La respuesta será enviada como un mensaje normal en breve. Prueba [/impostor](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: No he oído nada de $1"
         },
         "help": {
             "header": "Comandos Deuterium",
-            "sub": "Información de ayuda más extensa en https://deut.portasynthinca3.me/",
+            "sub": "Información de ayuda más extensa en https://deut.psi3.ru/",
             "regular": "COMANDOS COMUNES",
             "regular_sub": "Pueden ser ejecutados por cualquiera",
             "help": ":information_source: enviar este mensaje",
@@ -193,10 +193,10 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **impersonificación activada**",
-            "webhook_error": ":x: **El bot carece del permiso \"Gestionar Webhooks\"**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **El bot carece del permiso \"Gestionar Webhooks\"**\n[Más información](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **Error desconocido**"
         },
-        "missing_admin": ":x: **Se requiere el privilegio \"administrator\"**\n[Más información](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+        "missing_admin": ":x: **Se requiere el privilegio \"administrator\"**\n[Más información](https://deut.psi3.ru/admin-cmd/admin-commands-notice)"
     },
 
     "setting": {

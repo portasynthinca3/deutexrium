@@ -85,16 +85,16 @@
     "response": {
         "generate": {
             "gen_failed": ":x: **Unsuccesvolle generatie**",
-            "val_too_big": ":x: **Waarde te groot**\n[More info](https://deut.portasynthinca3.me/admin-cmd/gen-less-than-number-greater-than)"
+            "val_too_big": ":x: **Waarde te groot**\n[More info](https://deut.psi3.ru/admin-cmd/gen-less-than-number-greater-than)"
         },
         "gen_by_them": {
             "normal": ":white_check_mark: **Het bericht zal binnenkort verstuurd worden**",
-            "no_impostor": ":question: **Het antwoord zal binnenkort als normaal bericht verstuurd worden. Probeer [/impostor](https://deut.portasynthinca3.me/admin-cmd/impostor)**",
+            "no_impostor": ":question: **Het antwoord zal binnenkort als normaal bericht verstuurd worden. Probeer [/impostor](https://deut.psi3.ru/admin-cmd/impostor)**",
             "no_data": ":x: Ik heb nog geen berichten ontvangen van $1"
         },
         "help": {
             "header": "Commando's van Deuterium",
-            "sub": "Gedetailleerde hulp op https://deut.portasynthinca3.me/",
+            "sub": "Gedetailleerde hulp op https://deut.psi3.ru/",
             "regular": "Reguliere Commando's",
             "regular_sub": "Kunnen door iedereen uitgevoerd worden",
             "help": ":information_source: Stuur dit bericht",
@@ -161,10 +161,10 @@
         },
         "impostor": {
             "activated": ":white_check_mark: **Bedriegmodus geactiveerd**",
-            "webhook_error": ":x: **Bot ontbreekt de \"Manage Webhooks\" toestemming**\n[More info](https://deut.portasynthinca3.me/admin-cmd/impostor)",
+            "webhook_error": ":x: **Bot ontbreekt de \"Manage Webhooks\" toestemming**\n[More info](https://deut.psi3.ru/admin-cmd/impostor)",
             "unknown_error": ":x: **Onbekende fout**"
         },
-        "missing_admin": ":x: **Ontbrekende \"administrator\" privilege**\n[More info](https://deut.portasynthinca3.me/admin-cmd/admin-commands-notice)"
+        "missing_admin": ":x: **Ontbrekende \"administrator\" privilege**\n[More info](https://deut.psi3.ru/admin-cmd/admin-commands-notice)"
     },
     "setting": {
         "name": {
