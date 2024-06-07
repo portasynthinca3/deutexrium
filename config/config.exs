@@ -1,7 +1,7 @@
 import Config
 
 config :deutexrium,
-  data_path: "/var/deutexrium/data",
+  data_path: (if Mix.env() == :prod, do: "/var/deutexrium/data", else: ".data"),
   channel_unload_timeout: 3 * 1000, # milliseconds
   guild_unload_timeout: 4 * 1000,
   log_interval: 1000,
